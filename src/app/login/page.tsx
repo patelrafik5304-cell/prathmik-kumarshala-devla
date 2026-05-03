@@ -143,8 +143,10 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          {/* Removed Chrome message and maintenance notice */}
+        <div className="mt-6 text-center text-sm text-gray-500 space-y-1">
+          <p className="font-medium">Demo Credentials:</p>
+          <p>Admin: admin / admin123</p>
+          <p>Student: student / student123</p>
         </div>
       </div>
     </div>
