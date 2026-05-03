@@ -143,11 +143,8 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500 space-y-2">
-          <p>Please use Google Chrome for better experience</p>
-          <p className="text-yellow-600 font-medium">
-            ⚠ System will be under maintenance everyday between 11:55 PM to 12:30 AM
-          </p>
+        <div className="mt-6 text-center text-sm text-gray-500">
+          {/* Removed Chrome message and maintenance notice */}
         </div>
       </div>
     </div>
