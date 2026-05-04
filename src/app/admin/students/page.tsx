@@ -8,7 +8,6 @@ interface Student {
   name: string;
   class: string;
   email: string;
-  contact: string;
   password: string;
 }
 
@@ -19,7 +18,7 @@ export default function StudentsPage() {
   const [showCreds, setShowCreds] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [form, setForm] = useState({ name: '', class: '', contact: '' });
+  const [form, setForm] = useState({ name: '', class: '' });
   const [newCreds, setNewCreds] = useState<{ username: string; password: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,7 +47,7 @@ export default function StudentsPage() {
       setStudents(students.map((s) => (s.id === editingStudent.id ? { ...s, ...form } : s)));
       setShowModal(false);
       setEditingStudent(null);
-      setForm({ name: '', class: '', contact: '' });
+      setForm({ name: '', class: '' });
     } else {
       const res = await fetch('/api/students', {
         method: 'POST',
@@ -61,7 +60,7 @@ export default function StudentsPage() {
         setNewCreds({ username: data.username, password: data.password });
         setShowCreds(true);
         setShowModal(false);
-        setForm({ name: '', class: '', contact: '' });
+        setForm({ name: '', class: '' });
       }
     }
     setLoading(false);
@@ -69,7 +68,7 @@ export default function StudentsPage() {
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
-    setForm({ name: student.name, class: student.class, contact: student.contact });
+    setForm({ name: student.name, class: student.class });
     setShowModal(true);
   };
 
@@ -90,7 +89,7 @@ export default function StudentsPage() {
         <button
           onClick={() => {
             setEditingStudent(null);
-            setForm({ name: '', class: '', contact: '' });
+            setForm({ name: '', class: '' });
             setShowModal(true);
           }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
@@ -115,7 +114,6 @@ export default function StudentsPage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login ID</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Password</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -125,8 +123,7 @@ export default function StudentsPage() {
             {filtered.map((student) => (
               <tr key={student.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">{student.name}</td>
-                <td className="px-6 py-4">{student.class}</td>
-                <td className="px-6 py-4">{student.contact}</td>
+                <td className="px-6 py-4">Class {student.class}</td>
                 <td className="px-6 py-4 font-mono font-medium text-indigo-600">{student.username}</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -160,7 +157,7 @@ export default function StudentsPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No students found</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No students found</td>
               </tr>
             )}
           </tbody>
@@ -185,23 +182,17 @@ export default function StudentsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                <input
-                  type="text"
+                <select
                   value={form.class}
                   onChange={(e) => setForm({ ...form, class: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
-                <input
-                  type="text"
-                  value={form.contact}
-                  onChange={(e) => setForm({ ...form, contact: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
+                >
+                  <option value="">Select class</option>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                </select>
               </div>
               {!editingStudent && (
                 <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
