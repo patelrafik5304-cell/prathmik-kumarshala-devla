@@ -28,6 +28,7 @@ interface CsvRow {
 export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
+  const [filterClass, setFilterClass] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [showCreds, setShowCreds] = useState(false);
@@ -54,7 +55,8 @@ export default function StudentsPage() {
   }, []);
 
   const filtered = students.filter(
-    (s) => s.name.toLowerCase().includes(search.toLowerCase()) || s.username.toLowerCase().includes(search.toLowerCase()) || s.childUid.toLowerCase().includes(search.toLowerCase())
+    (s) => (filterClass === 'all' || s.class === filterClass) &&
+           (s.name.toLowerCase().includes(search.toLowerCase()) || s.username.toLowerCase().includes(search.toLowerCase()) || s.childUid.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,7 +173,7 @@ export default function StudentsPage() {
   };
 
   const downloadTemplate = () => {
-    const csv = 'name,childuid,class\njohn,43552,2\njane,35364,3';
+    const csv = 'name,childuid,class\njohn,43552,Class 2\njane,35364,Class 3';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -201,15 +203,26 @@ export default function StudentsPage() {
       </div>
 
       <Card className="p-4 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search by name, username, or child UID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, username, or child UID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+            />
+          </div>
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            className="px-4 py-2.5 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white min-w-[160px]"
+          >
+            <option value="all">All Classes</option>
+            <option value="0">BALVATIKA</option>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (<option key={c} value={c}>Class {c}</option>))}
+          </select>
         </div>
       </Card>
 
