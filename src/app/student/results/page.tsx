@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
 
 interface Result {
   id: string;
@@ -53,71 +53,148 @@ export default function StudentResults() {
     return 'F';
   };
 
+  const drawRow = (doc: jsPDF, y: number, cells: { x: number; width: number; text: string }[], bold: boolean) => {
+    if (bold) doc.setFont('helvetica', 'bold');
+    else doc.setFont('helvetica', 'normal');
+    cells.forEach((c) => {
+      doc.rect(c.x, y, c.width, 10);
+      doc.text(c.text, c.x + 2, y + 7);
+    });
+  };
+
   const downloadReport = (result: Result) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
     const totalMarks = Object.values(result.subjects).reduce((sum, m) => sum + m, 0);
     const maxMarks = Object.values(result.subjects).length * 100;
 
-    let report = `SCHOOL REPORT CARD\n`;
-    report += `${'='.repeat(30)}\n\n`;
-    report += `Student: ${result.studentName}\n`;
-    report += `Class: ${result.class}\n`;
-    report += `Exam: ${result.exam}\n`;
-    report += `Date: ${new Date().toLocaleDateString()}\n\n`;
-    report += `${'-'.repeat(30)}\n`;
-    report += `Subject\t\tMarks\tGrade\n`;
-    report += `${'-'.repeat(30)}\n`;
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRATHMIK KUMARSHALA-DEVLA', pageWidth / 2, 15, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('SCHOOL REPORT CARD', pageWidth / 2, 25, { align: 'center' });
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Student: ${result.studentName}`, 14, 32);
+    doc.text(`Class: ${result.class}`, 14, 39);
+    doc.text(`Exam: ${result.exam}`, 14, 46);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 53);
+
+    let y = 62;
+    const colWidths = [90, 30, 30];
+    const startX = 14;
+    const rowHeight = 10;
+
+    drawRow(doc, y, [
+      { x: startX, width: colWidths[0], text: 'Subject' },
+      { x: startX + colWidths[0], width: colWidths[1], text: 'Marks' },
+      { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: 'Grade' },
+    ], true);
+    y += rowHeight;
 
     Object.entries(result.subjects).forEach(([sub, mark]) => {
-      report += `${sub}\t\t${mark}/100\t${getSubGrade(mark)}\n`;
+      drawRow(doc, y, [
+        { x: startX, width: colWidths[0], text: sub },
+        { x: startX + colWidths[0], width: colWidths[1], text: `${mark}/100` },
+        { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: getSubGrade(mark) },
+      ], false);
+      y += rowHeight;
     });
 
-    report += `${'-'.repeat(30)}\n`;
-    report += `TOTAL\t\t${totalMarks}/${maxMarks}\n`;
-    report += `PERCENTAGE\t${result.percentage}\n`;
-    report += `GRADE\t\t${result.grade}\n`;
-    report += `${'='.repeat(30)}\n`;
+    drawRow(doc, y, [
+      { x: startX, width: colWidths[0], text: 'TOTAL' },
+      { x: startX + colWidths[0], width: colWidths[1], text: `${totalMarks}/${maxMarks}` },
+      { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: '' },
+    ], true);
+    y += rowHeight;
 
-    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, `${result.studentName}_${result.exam}_Report.txt`);
+    doc.text(`PERCENTAGE: ${result.percentage}`, 14, y + 10);
+    doc.text(`GRADE: ${result.grade}`, 14, y + 18);
+
+    doc.save(`${result.studentName}_${result.exam}_Report.pdf`);
   };
 
   const downloadAllResults = () => {
-    let report = `STUDENT REPORT CARD\n`;
-    report += `${'='.repeat(40)}\n\n`;
-    report += `Name: ${user?.name}\n`;
-    report += `Username: ${user?.username}\n`;
-    report += `Class: ${user?.class}\n`;
-    report += `Date: ${new Date().toLocaleDateString()}\n\n`;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const colWidths = [90, 30, 30];
+    const startX = 14;
+    const rowHeight = 10;
+    let y = 30;
+
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRATHMIK KUMARSHALA-DEVLA', pageWidth / 2, 10, { align: 'center' });
+    doc.setFontSize(16);
+    doc.text('STUDENT REPORT CARD', pageWidth / 2, y, { align: 'center' });
+    y += 15;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${user?.name}`, startX, y);
+    y += 7;
+    doc.text(`Username: ${user?.username}`, startX, y);
+    y += 7;
+    doc.text(`Class: ${user?.class}`, startX, y);
+    y += 7;
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, startX, y);
+    y += 12;
 
     Object.entries(groupedByExam).forEach(([exam, rows]) => {
       const first = rows[0];
       const totalMarks = Object.values(first.subjects).reduce((sum, m) => sum + m, 0);
       const maxMarks = Object.values(first.subjects).length * 100;
 
-      report += `Exam: ${exam}\n`;
-      report += `${'-'.repeat(40)}\n`;
-      report += `Subject\t\tMarks\tGrade\n`;
-      report += `${'-'.repeat(40)}\n`;
+      if (y > 250) { doc.addPage(); y = 20; }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(exam, startX, y);
+      y += 8;
+
+      doc.setFontSize(11);
+      drawRow(doc, y, [
+        { x: startX, width: colWidths[0], text: 'Subject' },
+        { x: startX + colWidths[0], width: colWidths[1], text: 'Marks' },
+        { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: 'Grade' },
+      ], true);
+      y += rowHeight;
 
       Object.entries(first.subjects).forEach(([sub, mark]) => {
-        report += `${sub}\t\t${mark}/100\t${getSubGrade(mark)}\n`;
+        drawRow(doc, y, [
+          { x: startX, width: colWidths[0], text: sub },
+          { x: startX + colWidths[0], width: colWidths[1], text: `${mark}/100` },
+          { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: getSubGrade(mark) },
+        ], false);
+        y += rowHeight;
       });
 
-      report += `${'-'.repeat(40)}\n`;
-      report += `TOTAL\t\t${totalMarks}/${maxMarks}\n`;
-      report += `PERCENTAGE\t${first.percentage}\n`;
-      report += `GRADE\t\t${first.grade}\n\n`;
+      drawRow(doc, y, [
+        { x: startX, width: colWidths[0], text: 'TOTAL' },
+        { x: startX + colWidths[0], width: colWidths[1], text: `${totalMarks}/${maxMarks}` },
+        { x: startX + colWidths[0] + colWidths[1], width: colWidths[2], text: '' },
+      ], true);
+      y += 15;
+      doc.text(`PERCENTAGE: ${first.percentage}`, startX, y);
+      y += 7;
+      doc.text(`GRADE: ${first.grade}`, startX, y);
+      y += 15;
     });
 
-    report += `${'='.repeat(40)}\n`;
-    report += `Overall Performance\n`;
-    report += `${'='.repeat(40)}\n`;
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Overall Performance', startX, y);
+    y += 10;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
     examSummaries.forEach((e) => {
-      report += `${e.exam}: ${e.avgPct} - ${e.grade}\n`;
+      doc.text(`${e.exam}: ${e.avgPct} - ${e.grade}`, startX, y);
+      y += 7;
     });
 
-    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
-    saveAs(blob, `${user?.name || 'Student'}_All_Results.txt`);
+    doc.save(`${user?.name || 'Student'}_All_Results.pdf`);
   };
 
   return (
