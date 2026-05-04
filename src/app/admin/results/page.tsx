@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import * as XLSX from 'xlsx';
+import { useAuth } from '@/context/AuthContext';
 
 interface Result {
   id: string;
+  studentUsername: string;
   studentName: string;
-  rollNumber: string;
   class: string;
   exam: string;
   percentage: string;
   grade: string;
   subjects: Record<string, number>;
 }
+
+const SUBJECTS = ['Math', 'Science', 'English', 'Social', 'Hindi'];
 
 function calculateGrade(pct: number): string {
   if (pct >= 90) return 'A+';
@@ -25,153 +27,141 @@ function calculateGrade(pct: number): string {
 }
 
 export default function ResultsPage() {
+  const { user } = useAuth();
   const [results, setResults] = useState<Result[]>([]);
   const [students, setStudents] = useState<{ id: string; username: string; name: string; class: string }[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [filterClass, setFilterClass] = useState('all');
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [search, setSearch] = useState('');
   const [preview, setPreview] = useState<Result[]>([]);
   const [uploadMsg, setUploadMsg] = useState('');
-  const [uploadError, setUploadError] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchResults = async () => {
-    const res = await fetch('/api/results');
-    const data = await res.json();
-    setResults(Array.isArray(data) ? data : []);
-  };
-
   useEffect(() => {
-    fetchResults();
+    fetch('/api/results')
+      .then((r) => r.json())
+      .then((data) => setResults(Array.isArray(data) ? data : []));
     fetch('/api/students')
       .then((r) => r.json())
       .then((data) => setStudents(Array.isArray(data) ? data : []));
   }, []);
 
-  const refetch = async () => {
-    const res = await fetch('/api/results');
-    const data = await res.json();
-    setResults(Array.isArray(data) ? data : []);
-  };
+  const classes = ['all', ...[...new Set(students.map((s) => s.class))].sort((a, b) => {
+    const numA = parseInt(a) || 0;
+    const numB = parseInt(b) || 0;
+    return numA - numB;
+  })];
 
-  const filtered = results.filter(
-    (r) =>
-      r.studentName.toLowerCase().includes(search.toLowerCase()) ||
-      r.rollNumber.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = filterClass === 'all' ? results : results.filter((r) => r.class === filterClass);
+
+  const downloadCSV = () => {
+    const classStudents = filterClass === 'all' ? students : students.filter((s) => s.class === filterClass);
+
+    if (classStudents.length === 0) {
+      alert('No students found for the selected class.');
+      return;
+    }
+
+    const header = ['Username', 'Student Name', 'Class', 'Exam', ...SUBJECTS].join(',');
+    const rows = classStudents.map((s) => {
+      const vals = [s.username, s.name, s.class, 'Mid-term'];
+      SUBJECTS.forEach(() => vals.push(''));
+      return vals.join(',');
+    });
+
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `results_${filterClass === 'all' ? 'all' : filterClass}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploadMsg('');
-    const ext = file.name.split('.').pop()?.toLowerCase();
+    setPreview([]);
 
-    if (ext === 'csv') {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        const parsed = parseCSV(text);
-        setPreview(parsed);
-        if (parsed.length === 0) setUploadMsg('No valid rows found. Expected columns: Roll Number, Student Name, Class, Exam, then subject marks.');
-      };
-      reader.readAsText(file);
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
-        const parsed = parseJsonToResults(json);
-        setPreview(parsed);
-        if (parsed.length === 0) setUploadMsg('No valid rows found. Expected columns: Roll Number, Student Name, Class, Exam, then subject marks.');
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      setUploadMsg('Unsupported file type. Please upload a .csv or .xlsx file.');
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) {
+        setUploadMsg('CSV file has no data rows.');
+        return;
+      }
 
-  const parseJsonToResults = (json: Record<string, unknown>[]): Result[] => {
-    return json.map((row) => {
-      const normalized: Record<string, unknown> = {};
-      Object.keys(row).forEach((key) => {
-        normalized[key.toLowerCase().trim()] = row[key];
-      });
-      return normalized;
-    }).reduce<Result[]>((acc, row) => {
-      const rollNumber = String(row['roll number'] || row['rollnumber'] || row['roll'] || '');
-      const studentName = String(row['student name'] || row['studentname'] || row['name'] || '');
-      const cls = String(row['class'] || row['std'] || '');
-      const exam = String(row['exam'] || row['exam type'] || row['test'] || '');
-      if (!rollNumber || !studentName) return acc;
+      const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+      const parsed = lines.slice(1).map((line) => {
+        const vals = line.split(',');
+        const row: Record<string, string> = {};
+        headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
+        return row;
+      }).filter((row) => row['username'] && row['student name']);
 
-      const subjects: Record<string, number> = {};
-      let total = 0;
-      let count = 0;
-      Object.keys(row).forEach((key) => {
-        const lower = key.toLowerCase().trim();
-        const skip = ['roll number', 'rollnumber', 'roll', 'student name', 'studentname', 'name', 'class', 'std', 'exam', 'exam type', 'test', 'total', 'percentage', 'grade'];
-        if (!skip.includes(lower)) {
-          const mark = parseFloat(String(row[key]));
+      const processed = parsed.map((row) => {
+        const subjects: Record<string, number> = {};
+        let total = 0;
+        let count = 0;
+        SUBJECTS.forEach((sub) => {
+          const mark = parseFloat(row[sub.toLowerCase()] || '');
           if (!isNaN(mark)) {
-            subjects[key] = mark;
+            subjects[sub] = mark;
             total += mark;
             count++;
           }
-        }
+        });
+        const maxMarks = count * 100;
+        const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
+
+        return {
+          id: '',
+          studentUsername: row['username'],
+          studentName: row['student name'],
+          class: row['class'],
+          exam: row['exam'] || 'Mid-term',
+          subjects,
+          percentage: `${pct}%`,
+          grade: calculateGrade(pct),
+        };
       });
 
-      const maxMarks = count * 100;
-      const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
+      if (processed.length === 0) {
+        setUploadMsg('No valid data found in CSV.');
+        return;
+      }
 
-      acc.push({
-        id: '',
-        rollNumber,
-        studentName,
-        class: cls,
-        exam,
-        subjects,
-        percentage: `${pct}%`,
-        grade: calculateGrade(pct),
-      });
-      return acc;
-    }, []);
-  };
-
-  const parseCSV = (text: string): Result[] => {
-    const lines = text.trim().split('\n');
-    if (lines.length < 2) return [];
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const dataLines = lines.slice(1);
-    return parseJsonToResults(dataLines.map((line) => {
-      const vals = line.split(',');
-      const row: Record<string, unknown> = {};
-      headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
-      return row;
-    }));
+      setPreview(processed);
+      setShowUploadModal(true);
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleConfirmUpload = async () => {
-    try {
-      setUploadError('');
-      setUploadSuccess('');
-      const res = await fetch('/api/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preview),
-      });
-      if (!res.ok) throw new Error('Upload failed');
-      setUploadSuccess(`${preview.length} result(s) uploaded successfully`);
+    setUploadMsg('');
+    setUploadSuccess('');
+    const res = await fetch('/api/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: preview, replace: true }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setUploadSuccess(`${data.count} result(s) uploaded successfully`);
       setPreview([]);
       setShowUploadModal(false);
-      await fetchResults();
-    } catch (err: any) {
-      setUploadError(err.message || 'Upload failed');
+      fetch('/api/results')
+        .then((r) => r.json())
+        .then((d) => setResults(Array.isArray(d) ? d : []));
+    } else {
+      setUploadMsg(data.error || 'Upload failed');
     }
   };
 
@@ -185,14 +175,10 @@ export default function ResultsPage() {
     const form = e.currentTarget;
     const fd = new FormData(form);
     const student = students.find((s) => s.id === selectedStudent);
-    const rollNumber = student?.username || (fd.get('rollNumber') as string);
-    const studentName = student?.name || (fd.get('studentName') as string);
-    const cls = student?.class || (fd.get('class') as string);
-    const exam = fd.get('exam') as string;
     const subjects: Record<string, number> = {};
     let total = 0;
     let count = 0;
-    ['Math', 'Science', 'English', 'Social', 'Hindi'].forEach((sub) => {
+    SUBJECTS.forEach((sub) => {
       const val = parseInt(fd.get(sub) as string);
       if (!isNaN(val)) {
         subjects[sub] = val;
@@ -208,20 +194,21 @@ export default function ResultsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         studentUsername: student?.username,
-        rollNumber,
-        studentName,
-        class: cls,
-        exam,
+        studentName: student?.name,
+        class: student?.class,
+        exam: fd.get('exam'),
         subjects,
         percentage: `${pct}%`,
         grade: calculateGrade(pct),
       }),
     });
 
-    setShowModal(false);
+    setShowAddModal(false);
     setSelectedStudent('');
     form.reset();
-    await fetchResults();
+    fetch('/api/results')
+      .then((r) => r.json())
+      .then((d) => setResults(Array.isArray(d) ? d : []));
   };
 
   return (
@@ -233,13 +220,26 @@ export default function ResultsPage() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => { setShowUploadModal(true); setPreview([]); setUploadMsg(''); }}
+            onClick={downloadCSV}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Generate CSV
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
-            📥 Upload CSV / Excel
+            Upload CSV
           </button>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => setShowAddModal(true)}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
           >
             + Add Result
@@ -248,20 +248,23 @@ export default function ResultsPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <input
-          type="text"
-          placeholder="Search by student name or roll number..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Class</label>
+        <select
+          value={filterClass}
+          onChange={(e) => setFilterClass(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+        >
+          {classes.map((c) => (
+            <option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${c}`}</option>
+          ))}
+        </select>
       </div>
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Roll No</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
@@ -273,7 +276,7 @@ export default function ResultsPage() {
           <tbody className="divide-y divide-gray-200">
             {filtered.map((result) => (
               <tr key={result.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">{result.rollNumber}</td>
+                <td className="px-6 py-4 font-mono text-indigo-600">{result.studentUsername}</td>
                 <td className="px-6 py-4">{result.studentName}</td>
                 <td className="px-6 py-4">{result.class}</td>
                 <td className="px-6 py-4">{result.exam}</td>
@@ -284,10 +287,7 @@ export default function ResultsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    <button className="text-indigo-600 hover:text-indigo-800">View</button>
-                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result.id)}>Delete</button>
-                  </div>
+                  <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result.id)}>Delete</button>
                 </td>
               </tr>
             ))}
@@ -300,8 +300,15 @@ export default function ResultsPage() {
         </table>
       </div>
 
+      {uploadSuccess && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
+          {uploadSuccess}
+          <button onClick={() => setUploadSuccess('')} className="ml-4 underline">Dismiss</button>
+        </div>
+      )}
+
       {/* Add Result Modal */}
-      {showModal && (
+      {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <h2 className="text-xl font-bold mb-4">Add Result</h2>
@@ -310,9 +317,7 @@ export default function ResultsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Student</label>
                 <select
                   value={selectedStudent}
-                  onChange={(e) => {
-                    setSelectedStudent(e.target.value);
-                  }}
+                  onChange={(e) => setSelectedStudent(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg"
                   required
                 >
@@ -324,16 +329,16 @@ export default function ResultsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
-                  <input name="rollNumber" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                  <input name="studentName" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly />
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                  <input name="class" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly />
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
@@ -346,7 +351,7 @@ export default function ResultsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subjects (Marks)</label>
-                {['Math', 'Science', 'English', 'Social', 'Hindi'].map((sub) => (
+                {SUBJECTS.map((sub) => (
                   <div key={sub} className="flex items-center gap-3 mb-2">
                     <span className="w-20 text-sm">{sub}</span>
                     <input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-1 border border-gray-300 rounded" />
@@ -358,7 +363,7 @@ export default function ResultsPage() {
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
                   Save Result
                 </button>
-                <button type="button" onClick={() => { setShowModal(false); setSelectedStudent(''); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                <button type="button" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
                   Cancel
                 </button>
               </div>
@@ -367,85 +372,58 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Upload Modal */}
+      {/* Upload Preview Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-2">Upload CSV or Excel File</h2>
+          <div className="bg-white rounded-xl p-6 w-full max-w-3xl">
+            <h2 className="text-xl font-bold mb-2">Preview Upload</h2>
             <p className="text-sm text-gray-500 mb-4">
-              Expected columns: <span className="font-mono bg-gray-100 px-1 rounded">Roll Number</span>,{' '}
-              <span className="font-mono bg-gray-100 px-1 rounded">Student Name</span>,{' '}
-              <span className="font-mono bg-gray-100 px-1 rounded">Class</span>,{' '}
-              <span className="font-mono bg-gray-100 px-1 rounded">Exam</span>, then subject marks columns
+              {preview.length} result(s) will be added. Existing results for same student + exam will be replaced.
             </p>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="fileUpload"
-              />
-              <label
-                htmlFor="fileUpload"
-                className="cursor-pointer inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                📁 Choose File
-              </label>
-              <p className="text-sm text-gray-500 mt-2">or drag and drop a .csv or .xlsx file</p>
-            </div>
+            {preview.length > 0 && (
+              <div className="max-h-64 overflow-y-auto mb-4 border rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {preview.map((r, i) => (
+                      <tr key={i}>
+                        <td className="px-3 py-2 font-mono text-indigo-600">{r.studentUsername}</td>
+                        <td className="px-3 py-2">{r.studentName}</td>
+                        <td className="px-3 py-2">{r.class}</td>
+                        <td className="px-3 py-2">{r.exam}</td>
+                        <td className="px-3 py-2">{r.percentage}</td>
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
+                            {r.grade}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {uploadMsg && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{uploadMsg}</div>
             )}
 
-            {preview.length > 0 && (
-              <>
-                <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm">
-                  Preview: {preview.length} result(s) found. Review below before importing.
-                </div>
-                <div className="max-h-64 overflow-y-auto mb-4">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Roll No</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {preview.map((r, i) => (
-                        <tr key={i}>
-                          <td className="px-3 py-2 font-medium">{r.rollNumber}</td>
-                          <td className="px-3 py-2">{r.studentName}</td>
-                          <td className="px-3 py-2">{r.class}</td>
-                          <td className="px-3 py-2">{r.exam}</td>
-                          <td className="px-3 py-2">{r.percentage}</td>
-                          <td className="px-3 py-2">
-                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
-                              {r.grade}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
             <div className="flex gap-3">
               <button
                 onClick={handleConfirmUpload}
-                disabled={preview.length === 0}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
               >
-                Import {preview.length} Result(s)
+                Upload {preview.length} Result(s)
               </button>
               <button
                 onClick={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }}
