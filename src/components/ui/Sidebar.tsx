@@ -67,10 +67,7 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
               <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center font-bold text-white text-lg">
                 P
               </div>
-              <div>
-                <h2 className="font-semibold text-sm">{title}</h2>
-                <p className="text-xs text-blue-200">{user?.name || ''}</p>
-              </div>
+              <h2 className="font-semibold text-sm">{title}</h2>
             </div>
             <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors">
               <X className="w-5 h-5" />
