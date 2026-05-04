@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 
+function generateStudentId(count: number): string {
+  return `STU${String(count).padStart(4, '0')}`;
+}
+
 function generateUsername(name: string, count: number): string {
   const prefix = name.toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
   return `${prefix}${String(count).padStart(3, '0')}`;
@@ -13,6 +17,24 @@ function generatePassword(): string {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return password;
+}
+
+async function createStudentUser(name: string, count: number) {
+  const db = getAdminDb();
+  const auth = getAdminAuth();
+  const username = generateUsername(name, count);
+  const password = generatePassword();
+  const email = `${username}@school.com`;
+  await auth.createUser({ email, password, displayName: name });
+  const userRecord = await auth.getUserByEmail(email);
+  await auth.setCustomUserClaims(userRecord.uid, { role: 'student', username });
+  return { username, password, email };
+}
+
+async function getCount(): Promise<number> {
+  const db = getAdminDb();
+  const snapshot = await db.collection('students').count().get();
+  return snapshot.data()?.count || 0;
 }
 
 export async function GET() {
@@ -37,40 +59,35 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const db = getAdminDb();
-    const auth = getAdminAuth();
     const body = await req.json();
-
-    const countSnapshot = await db.collection('students').count().get();
-    const count = (countSnapshot.data()?.count || 0) + 1;
-    const username = generateUsername(body.name, count);
-    const password = generatePassword();
-    const email = `${username}@school.com`;
-
-    await auth.createUser({
-      email,
-      password,
-      displayName: body.name,
-    });
-
-    const userRecord = await auth.getUserByEmail(email);
-    await auth.setCustomUserClaims(userRecord.uid, { role: 'student', username });
-
+    if (!body.name || !body.childUid) {
+      return NextResponse.json({ error: 'Name and Child UID are required' }, { status: 400 });
+    }
+    const count = await getCount();
+    const countNum = count + 1;
+    const studentId = generateStudentId(countNum);
+    const { username, password, email } = await createStudentUser(body.name, countNum);
     const docRef = await db.collection('students').add({
-      ...body,
+      studentId,
+      childUid: body.childUid,
+      name: body.name,
+      class: body.class,
       username,
       email,
       password,
+      photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });
-
-    console.log('[Students POST] Created:', username, 'with photo:', !!body.photo);
-
     return NextResponse.json({
       id: docRef.id,
-      ...body,
+      studentId,
+      childUid: body.childUid,
+      name: body.name,
+      class: body.class,
       username,
       password,
       email,
+      photo: body.photo || '',
     }, { status: 201 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message || 'Failed to create student' }, { status: 500 });
@@ -95,7 +112,6 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-
     const doc = await db.collection('students').doc(id).get();
     const email = doc.data()?.email;
     if (email) {
@@ -104,7 +120,6 @@ export async function DELETE(req: NextRequest) {
         await auth.deleteUser(user.uid);
       } catch {}
     }
-
     await db.collection('students').doc(id).delete();
     return NextResponse.json({ success: true });
   } catch (e) {
