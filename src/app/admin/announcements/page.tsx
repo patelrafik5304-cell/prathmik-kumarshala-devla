@@ -1,34 +1,61 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const initialAnnouncements = [
-  { id: 1, title: 'Annual Sports Day', content: 'Sports day will be held on May 15, 2026', priority: 'high', date: '2026-05-03', isActive: true },
-  { id: 2, title: 'Mid-term Exam Schedule', content: 'Exams start from May 10, 2026', priority: 'medium', date: '2026-05-01', isActive: true },
-  { id: 3, title: 'Parent-Teacher Meeting', content: 'Meeting scheduled for next Friday', priority: 'high', date: '2026-04-28', isActive: true },
-];
+interface Announcement {
+  _id: string;
+  title: string;
+  content: string;
+  priority: 'low' | 'medium' | 'high';
+  isActive: boolean;
+  date: string;
+}
 
 export default function AnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', priority: 'medium' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch('/api/announcements')
+      .then((r) => r.json())
+      .then((data) => setAnnouncements(data));
+  }, []);
+
+  const refetch = () => {
+    fetch('/api/announcements')
+      .then((r) => r.json())
+      .then((data) => setAnnouncements(data));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAnnouncements([
-      { ...form, id: Date.now(), date: new Date().toISOString().split('T')[0], isActive: true },
-      ...announcements,
-    ]);
+    await fetch('/api/announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        date: new Date().toISOString().split('T')[0],
+        isActive: true,
+      }),
+    });
     setShowModal(false);
     setForm({ title: '', content: '', priority: 'medium' });
+    refetch();
   };
 
-  const toggleActive = (id: number) => {
-    setAnnouncements(announcements.map((a) => (a.id === id ? { ...a, isActive: !a.isActive } : a)));
+  const toggleActive = async (item: Announcement) => {
+    await fetch('/api/announcements', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item._id, isActive: !item.isActive }),
+    });
+    setAnnouncements(announcements.map((a) => (a._id === item._id ? { ...a, isActive: !a.isActive } : a)));
   };
 
-  const handleDelete = (id: number) => {
-    setAnnouncements(announcements.filter((a) => a.id !== id));
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
+    setAnnouncements(announcements.filter((a) => a._id !== id));
   };
 
   return (
@@ -48,7 +75,7 @@ export default function AnnouncementsPage() {
 
       <div className="space-y-4">
         {announcements.map((a) => (
-          <div key={a.id} className="bg-white rounded-xl shadow p-6">
+          <div key={a._id} className="bg-white rounded-xl shadow p-6">
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -73,7 +100,7 @@ export default function AnnouncementsPage() {
               </div>
               <div className="flex gap-2 ml-4">
                 <button
-                  onClick={() => toggleActive(a.id)}
+                  onClick={() => toggleActive(a)}
                   className={`px-3 py-1 rounded text-sm ${
                     a.isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                   }`}
@@ -81,7 +108,7 @@ export default function AnnouncementsPage() {
                   {a.isActive ? 'Deactivate' : 'Activate'}
                 </button>
                 <button className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
-                <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800 text-sm">
+                <button onClick={() => handleDelete(a._id)} className="text-red-600 hover:text-red-800 text-sm">
                   Delete
                 </button>
               </div>

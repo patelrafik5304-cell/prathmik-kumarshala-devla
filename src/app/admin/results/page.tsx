@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 interface Result {
-  id: number;
+  _id: string;
   studentName: string;
   rollNumber: string;
   class: string;
@@ -13,13 +13,6 @@ interface Result {
   grade: string;
   subjects: Record<string, number>;
 }
-
-const defaultResults: Result[] = [
-  { id: 1, studentName: 'John Doe', rollNumber: 'STU001', class: '10-A', exam: 'Mid-term', percentage: '92%', grade: 'A+', subjects: { Math: 95, Science: 90, English: 92, Social: 91 } },
-  { id: 2, studentName: 'Jane Smith', rollNumber: 'STU002', class: '10-A', exam: 'Mid-term', percentage: '88%', grade: 'A', subjects: { Math: 88, Science: 85, English: 90, Social: 89 } },
-  { id: 3, studentName: 'Mike Johnson', rollNumber: 'STU003', class: '10-B', exam: 'Mid-term', percentage: '95%', grade: 'A+', subjects: { Math: 97, Science: 94, English: 95, Social: 93 } },
-  { id: 4, studentName: 'Sarah Williams', rollNumber: 'STU004', class: '9-A', exam: 'Mid-term', percentage: '90%', grade: 'A+', subjects: { Math: 88, Science: 92, English: 90, Social: 90 } },
-];
 
 function calculateGrade(pct: number): string {
   if (pct >= 90) return 'A+';
@@ -38,22 +31,25 @@ export default function ResultsPage() {
   const [search, setSearch] = useState('');
   const [preview, setPreview] = useState<Result[]>([]);
   const [uploadMsg, setUploadMsg] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploadSuccess, setUploadSuccess] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('results');
-    if (stored) {
-      setResults(JSON.parse(stored));
-    } else {
-      setResults(defaultResults);
-    }
-  }, []);
+  const fetchResults = async () => {
+    const res = await fetch('/api/results');
+    const data = await res.json();
+    setResults(data);
+  };
 
   useEffect(() => {
-    if (results.length > 0) {
-      localStorage.setItem('results', JSON.stringify(results));
-    }
-  }, [results]);
+    fetchResults();
+  }, []);
+
+  const refetch = async () => {
+    const res = await fetch('/api/results');
+    const data = await res.json();
+    setResults(data);
+  };
 
   const filtered = results.filter(
     (r) =>
@@ -129,7 +125,7 @@ export default function ResultsPage() {
       const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
 
       acc.push({
-        id: Date.now() + Math.random(),
+        _id: '',
         rollNumber,
         studentName,
         class: cls,
@@ -155,19 +151,31 @@ export default function ResultsPage() {
     }));
   };
 
-  const handleConfirmUpload = () => {
-    const newResults = [...results, ...preview];
-    setResults(newResults);
-    setPreview([]);
-    setShowUploadModal(false);
-    setUploadMsg('');
+  const handleConfirmUpload = async () => {
+    try {
+      setUploadError('');
+      setUploadSuccess('');
+      const res = await fetch('/api/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preview),
+      });
+      if (!res.ok) throw new Error('Upload failed');
+      setUploadSuccess(`${preview.length} result(s) uploaded successfully`);
+      setPreview([]);
+      setShowUploadModal(false);
+      await fetchResults();
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setResults(results.filter((r) => r.id !== id));
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
+    setResults(results.filter((r) => r._id !== id));
   };
 
-  const handleAddResult = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddResult = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -189,10 +197,10 @@ export default function ResultsPage() {
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
 
-    setResults([
-      ...results,
-      {
-        id: Date.now(),
+    await fetch('/api/results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         rollNumber,
         studentName,
         class: cls,
@@ -200,10 +208,12 @@ export default function ResultsPage() {
         subjects,
         percentage: `${pct}%`,
         grade: calculateGrade(pct),
-      },
-    ]);
+      }),
+    });
+
     setShowModal(false);
     form.reset();
+    await fetchResults();
   };
 
   return (
@@ -254,7 +264,7 @@ export default function ResultsPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filtered.map((result) => (
-              <tr key={result.id} className="hover:bg-gray-50">
+              <tr key={result._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium">{result.rollNumber}</td>
                 <td className="px-6 py-4">{result.studentName}</td>
                 <td className="px-6 py-4">{result.class}</td>
@@ -268,7 +278,7 @@ export default function ResultsPage() {
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button className="text-indigo-600 hover:text-indigo-800">View</button>
-                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result.id)}>Delete</button>
+                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result._id)}>Delete</button>
                   </div>
                 </td>
               </tr>

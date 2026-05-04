@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 interface Result {
-  id: number;
+  _id: string;
   studentName: string;
   rollNumber: string;
   class: string;
@@ -17,10 +17,9 @@ export default function StudentResults() {
   const [results, setResults] = useState<Result[]>([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('results');
-    if (stored) {
-      setResults(JSON.parse(stored));
-    }
+    fetch('/api/results')
+      .then((r) => r.json())
+      .then((data) => setResults(data));
   }, []);
 
   const groupedByExam = results.reduce<Record<string, Result[]>>((acc, r) => {

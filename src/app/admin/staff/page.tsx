@@ -1,29 +1,49 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const initialStaff = [
-  { id: 1, name: 'Mr. Robert Smith', designation: 'Principal', department: 'Administration', email: 'robert@school.com', contact: '9876543210' },
-  { id: 2, name: 'Ms. Emily Davis', designation: 'Vice Principal', department: 'Administration', email: 'emily@school.com', contact: '9876543211' },
-  { id: 3, name: 'Mr. James Wilson', designation: 'Math Teacher', department: 'Mathematics', email: 'james@school.com', contact: '9876543212' },
-  { id: 4, name: 'Ms. Lisa Brown', designation: 'Science Teacher', department: 'Science', email: 'lisa@school.com', contact: '9876543213' },
-];
+interface StaffMember {
+  _id: string;
+  name: string;
+  designation: string;
+  department: string;
+  email: string;
+  contact: string;
+}
 
 export default function StaffPage() {
-  const [staff, setStaff] = useState(initialStaff);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', designation: '', department: '', email: '', contact: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setStaff([{ ...form, id: Date.now() }, ...staff]);
-    setShowModal(false);
-    setForm({ name: '', designation: '', department: '', email: '', contact: '' });
+  useEffect(() => {
+    fetch('/api/staff')
+      .then((r) => r.json())
+      .then((data) => setStaff(data));
+  }, []);
+
+  const refetch = () => {
+    fetch('/api/staff')
+      .then((r) => r.json())
+      .then((data) => setStaff(data));
   };
 
-  const handleDelete = (id: number) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/staff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    setShowModal(false);
+    setForm({ name: '', designation: '', department: '', email: '', contact: '' });
+    refetch();
+  };
+
+  const handleDelete = async (id: string) => {
     if (confirm('Delete this staff member?')) {
-      setStaff(staff.filter((s) => s.id !== id));
+      await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
+      setStaff(staff.filter((s) => s._id !== id));
     }
   };
 
@@ -56,7 +76,7 @@ export default function StaffPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {staff.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50">
+              <tr key={s._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium">{s.name}</td>
                 <td className="px-6 py-4">{s.designation}</td>
                 <td className="px-6 py-4">{s.department}</td>
@@ -65,7 +85,7 @@ export default function StaffPage() {
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button className="text-indigo-600 hover:text-indigo-800">Edit</button>
-                    <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800">
+                    <button onClick={() => handleDelete(s._id)} className="text-red-600 hover:text-red-800">
                       Delete
                     </button>
                   </div>

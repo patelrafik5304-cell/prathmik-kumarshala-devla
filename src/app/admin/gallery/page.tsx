@@ -1,27 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const initialImages = [
-  { id: 1, title: 'Annual Day 2026', category: 'Events', description: 'Students performing at annual day', date: '2026-04-15' },
-  { id: 2, title: 'Science Fair', category: 'Academic', description: 'Student projects on display', date: '2026-03-20' },
-  { id: 3, title: 'Sports Day', category: 'Sports', description: 'Annual sports meet highlights', date: '2026-02-10' },
-];
+interface GalleryItem {
+  _id: string;
+  title: string;
+  category: string;
+  description: string;
+  imageUrl: string;
+  date: string;
+}
 
 export default function GalleryPage() {
-  const [images, setImages] = useState(initialImages);
+  const [images, setImages] = useState<GalleryItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Events', description: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setImages([{ ...form, id: Date.now(), date: new Date().toISOString().split('T')[0] }, ...images]);
-    setShowModal(false);
-    setForm({ title: '', category: 'Events', description: '' });
+  useEffect(() => {
+    fetch('/api/gallery')
+      .then((r) => r.json())
+      .then((data) => setImages(data));
+  }, []);
+
+  const refetch = () => {
+    fetch('/api/gallery')
+      .then((r) => r.json())
+      .then((data) => setImages(data));
   };
 
-  const handleDelete = (id: number) => {
-    setImages(images.filter((i) => i.id !== id));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/gallery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        imageUrl: '',
+        date: new Date().toISOString().split('T')[0],
+      }),
+    });
+    setShowModal(false);
+    setForm({ title: '', category: 'Events', description: '' });
+    refetch();
+  };
+
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
+    setImages(images.filter((i) => i._id !== id));
   };
 
   return (
@@ -41,7 +66,7 @@ export default function GalleryPage() {
 
       <div className="grid md:grid-cols-3 gap-6">
         {images.map((img) => (
-          <div key={img.id} className="bg-white rounded-xl shadow overflow-hidden">
+          <div key={img._id} className="bg-white rounded-xl shadow overflow-hidden">
             <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
               <span className="text-white text-4xl">🖼️</span>
             </div>
@@ -54,7 +79,7 @@ export default function GalleryPage() {
               <p className="text-xs text-gray-400">{img.date}</p>
               <div className="flex gap-2 mt-3">
                 <button className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
-                <button onClick={() => handleDelete(img.id)} className="text-red-600 hover:text-red-800 text-sm">
+                <button onClick={() => handleDelete(img._id)} className="text-red-600 hover:text-red-800 text-sm">
                   Delete
                 </button>
               </div>
