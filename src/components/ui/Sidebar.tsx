@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Users, UserCheck, CalendarDays, FileText,
-  Megaphone, Image, Globe, LogOut, X, BookOpen, Bell, UserCircle
+  Megaphone, Image, Globe, LogOut, X, Menu, Bell, UserCircle
 } from 'lucide-react';
 
 const adminItems = [
@@ -32,9 +32,10 @@ interface SidebarProps {
   role: string;
   isOpen: boolean;
   onClose: () => void;
+  onOpen: () => void;
 }
 
-export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -48,6 +49,15 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
   return (
     <>
+      {!isOpen && (
+        <button
+          onClick={onOpen}
+          className="fixed top-4 left-4 z-30 lg:hidden p-2.5 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+        >
+          <Menu className="w-5 h-5 text-gray-600" />
+        </button>
+      )}
+
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
@@ -61,7 +71,6 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center font-bold text-white text-lg">
@@ -74,7 +83,6 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
             </button>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-4 px-3">
             <ul className="space-y-1">
               {items.map((item) => {
@@ -102,7 +110,6 @@ export default function Sidebar({ role, isOpen, onClose }: SidebarProps) {
             </ul>
           </nav>
 
-          {/* Footer */}
           <div className="px-3 py-4 border-t border-white/10">
             <button
               onClick={handleLogout}
