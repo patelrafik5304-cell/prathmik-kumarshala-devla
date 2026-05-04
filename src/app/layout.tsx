@@ -8,10 +8,6 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600
 export const metadata: Metadata = {
   title: "Prathmik Kumarshala - School Management System",
   description: "Modern school management system with admin and student portals",
-  icons: {
-    icon: "/logo.jpeg",
-    apple: "/logo.jpeg",
-  },
 };
 
 export default function RootLayout({
@@ -21,6 +17,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/logo.jpeg?v=2" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/logo.jpeg?v=2" />
+      </head>
       <body className={poppins.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
