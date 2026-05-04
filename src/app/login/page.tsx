@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -187,9 +186,6 @@ export default function LoginPage() {
                 </div>
                 <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
               </label>
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors hover:underline">
-                Forgot Password?
-              </Link>
             </div>
 
             {/* Login Button */}
