@@ -122,7 +122,7 @@ export default function AttendancePage() {
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
             <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
-              {classes.map((c) => (<option key={c} value={c}>Class {c}</option>))}
+              {classes.map((c) => (<option key={c} value={c}>{c === '0' ? 'BALVATIKA' : `Class ${c}`}</option>))}
             </select>
           </div>
           <div className="flex items-end">

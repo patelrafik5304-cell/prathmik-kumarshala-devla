@@ -133,7 +133,7 @@ export default function StudentsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant="info">Class {student.class}</Badge>
+                    <Badge variant="info">{student.class === '0' ? 'BALVATIKA' : `Class ${student.class}`}</Badge>
                   </td>
                   <td className="px-6 py-4 font-mono text-sm text-primary font-medium">{student.username}</td>
                   <td className="px-6 py-4">
@@ -172,7 +172,8 @@ export default function StudentsPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
             <select value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" required>
               <option value="">Select class</option>
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((c) => (<option key={c} value={c}>Class {c}</option>))}
+              <option value="0">BALVATIKA</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (<option key={c} value={c}>Class {c}</option>))}
             </select>
           </div>
           <div>

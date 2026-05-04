@@ -51,7 +51,7 @@ export default function StudentProfile() {
             )}
           </div>
           <h2 className="text-2xl font-bold text-gray-800">{student.name}</h2>
-          <p className="text-gray-500 text-sm">Class {student.class} | Username: {student.username}</p>
+          <p className="text-gray-500 text-sm">{student.class === '0' ? 'BALVATIKA' : `Class ${student.class}`} | Username: {student.username}</p>
         </div>
       </Card>
 

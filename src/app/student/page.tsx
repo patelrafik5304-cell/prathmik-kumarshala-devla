@@ -85,7 +85,7 @@ export default function StudentDashboard() {
       {/* Welcome */}
       <div className="mb-8 animate-fade-in">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">{greeting}, {user.name}!</h1>
-        <p className="text-gray-500 mt-1 text-sm">Class {user.class || '-'} | Welcome to your portal</p>
+        <p className="text-gray-500 mt-1 text-sm">{user.class === '0' ? 'BALVATIKA' : user.class ? `Class ${user.class}` : '-'} | Welcome to your portal</p>
       </div>
 
       {/* Stats */}

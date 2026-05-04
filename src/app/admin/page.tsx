@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-800">{s.name}</p>
-                      <p className="text-xs text-gray-500">Class {s.class}</p>
+                      <p className="text-xs text-gray-500">{s.class === '0' ? 'BALVATIKA' : `Class ${s.class}`}</p>
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400" />

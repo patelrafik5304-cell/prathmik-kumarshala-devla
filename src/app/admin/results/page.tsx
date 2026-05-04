@@ -195,7 +195,7 @@ export default function ResultsPage() {
       <Card className="p-4 mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Class</label>
         <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
-          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${c}`}</option>))}
+          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : c === '0' ? 'BALVATIKA' : `Class ${c}`}</option>))}
         </select>
       </Card>
 
@@ -253,7 +253,7 @@ export default function ResultsPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
             <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white" required>
               <option value="">Choose a student...</option>
-              {students.map((s) => (<option key={s.id} value={s.id}>{s.name} ({s.username}) - Class {s.class}</option>))}
+              {students.map((s) => (<option key={s.id} value={s.id}>{s.name} ({s.username}) - {s.class === '0' ? 'BALVATIKA' : `Class ${s.class}`}</option>))}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
