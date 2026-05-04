@@ -14,6 +14,7 @@ interface GalleryItem {
 export default function StudentGallery() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
 
   useEffect(() => {
     fetch('/api/gallery')
@@ -21,7 +22,7 @@ export default function StudentGallery() {
       .then((data) => setGalleryItems(Array.isArray(data) ? data : []));
   }, []);
 
-  const categories = ['All', 'Events', 'Academic', 'Sports', 'Infrastructure'];
+  const categories = ['All', ...Array.from(new Set(galleryItems.map((g) => g.category)))];
   const filtered = selectedCategory === 'All' ? galleryItems : galleryItems.filter((g) => g.category === selectedCategory);
 
   return (
@@ -43,29 +44,52 @@ export default function StudentGallery() {
         ))}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {filtered.map((item) => (
-          <div key={item._id} className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition">
-            <div className="h-48 overflow-hidden">
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-              ) : (
-                <div className="h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-                  <span className="text-white text-4xl">Gallery</span>
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-800">{item.title}</h3>
-                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">{item.category}</span>
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-500">
+          <p className="text-lg">No images in the gallery yet.</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-3 gap-6">
+          {filtered.map((item) => (
+            <div
+              key={item._id}
+              className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer"
+              onClick={() => setSelectedImage(item)}
+            >
+              <div className="h-48 overflow-hidden">
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                    <span className="text-white text-4xl">Gallery</span>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-gray-600">{item.description}</p>
-              <p className="text-xs text-gray-400 mt-2">{item.date}</p>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-800">{item.title}</h3>
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">{item.category}</span>
+                </div>
+                <p className="text-sm text-gray-600">{item.description}</p>
+                <p className="text-xs text-gray-400 mt-2">{item.date}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+          <div className="max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full max-h-[80vh] object-contain rounded-xl shadow-2xl" />
+            <div className="bg-white rounded-b-xl p-4 -mt-1">
+              <h3 className="font-semibold text-gray-800">{selectedImage.title}</h3>
+              <p className="text-sm text-gray-600">{selectedImage.description}</p>
+              <p className="text-xs text-gray-400 mt-1">{selectedImage.date} · {selectedImage.category}</p>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
