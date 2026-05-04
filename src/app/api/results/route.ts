@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     }
 
     const snapshot = await query.get();
-    const results = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+    const results = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
     return NextResponse.json(results);
   } catch (e) {
     return NextResponse.json([]);
