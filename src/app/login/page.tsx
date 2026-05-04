@@ -81,7 +81,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-lg mb-4 transform transition-transform duration-300 hover:scale-105 hover:rotate-2">
               <span className="text-white text-3xl font-bold">P</span>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Prathmik Kumarshala</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-amber-500 animate-gradient-text">PRATHMIK KUMARSHALA</h1>
             <p className="text-blue-600 font-medium mt-1">Management System</p>
             <p className="text-gray-500 text-sm mt-2">Sign in to your account</p>
           </div>
@@ -262,6 +262,15 @@ export default function LoginPage() {
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
+        }
+        @keyframes gradient-text {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-text {
+          background-size: 200% auto;
+          animation: gradient-text 4s ease infinite;
         }
       `}</style>
     </div>
