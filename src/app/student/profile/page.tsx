@@ -16,6 +16,7 @@ export default function StudentProfile() {
     address?: string;
   } | null>(null);
   const [attendance, setAttendance] = useState(0);
+  const [showPhoto, setShowPhoto] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -56,7 +57,7 @@ export default function StudentProfile() {
         <div className="px-8 pb-8">
           <div className="-mt-12 mb-4">
             {student.photo ? (
-              <img src={student.photo} alt={student.name} className="w-24 h-24 rounded-full border-4 border-white object-cover" />
+              <img src={student.photo} alt={student.name} onClick={() => setShowPhoto(true)} className="w-24 h-24 rounded-full border-4 border-white object-cover cursor-pointer" />
             ) : (
               <div className="w-24 h-24 bg-indigo-600 rounded-full border-4 border-white flex items-center justify-center">
                 <span className="text-white text-3xl font-bold">{student.name.charAt(0)}</span>
@@ -107,6 +108,12 @@ export default function StudentProfile() {
           </div>
         </div>
       </div>
+
+      {showPhoto && student.photo && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowPhoto(false)}>
+          <img src={student.photo} alt={student.name} className="max-w-md max-h-[80vh] rounded-xl shadow-2xl" />
+        </div>
+      )}
     </div>
   );
 }
