@@ -9,6 +9,7 @@ interface Student {
   class: string;
   email: string;
   password: string;
+  photo?: string;
 }
 
 export default function StudentsPage() {
@@ -18,9 +19,19 @@ export default function StudentsPage() {
   const [showCreds, setShowCreds] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [form, setForm] = useState({ name: '', class: '' });
+  const [form, setForm] = useState({ name: '', class: '', photo: '' });
   const [newCreds, setNewCreds] = useState<{ username: string; password: string } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setForm({ ...form, photo: ev.target?.result as string });
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetch('/api/students')
@@ -47,7 +58,7 @@ export default function StudentsPage() {
       setStudents(students.map((s) => (s.id === editingStudent.id ? { ...s, ...form } : s)));
       setShowModal(false);
       setEditingStudent(null);
-      setForm({ name: '', class: '' });
+      setForm({ name: '', class: '', photo: '' });
     } else {
       const res = await fetch('/api/students', {
         method: 'POST',
@@ -60,7 +71,7 @@ export default function StudentsPage() {
         setNewCreds({ username: data.username, password: data.password });
         setShowCreds(true);
         setShowModal(false);
-        setForm({ name: '', class: '' });
+        setForm({ name: '', class: '', photo: '' });
       }
     }
     setLoading(false);
@@ -68,7 +79,7 @@ export default function StudentsPage() {
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
-    setForm({ name: student.name, class: student.class });
+    setForm({ name: student.name, class: student.class, photo: student.photo || '' });
     setShowModal(true);
   };
 
@@ -89,7 +100,7 @@ export default function StudentsPage() {
         <button
           onClick={() => {
             setEditingStudent(null);
-            setForm({ name: '', class: '' });
+            setForm({ name: '', class: '', photo: '' });
             setShowModal(true);
           }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
@@ -193,6 +204,25 @@ export default function StudentsPage() {
                     <option key={c} value={c}>Class {c}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+                <div className="flex items-center gap-4">
+                  {form.photo && (
+                    <img src={form.photo} alt="Preview" className="w-16 h-16 rounded-full object-cover border" />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="flex-1 text-sm"
+                  />
+                  {form.photo && (
+                    <button type="button" onClick={() => setForm({ ...form, photo: '' })} className="text-red-600 text-sm hover:underline">
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
               {!editingStudent && (
                 <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">

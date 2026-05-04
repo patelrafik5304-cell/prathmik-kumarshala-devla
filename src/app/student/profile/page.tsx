@@ -9,6 +9,7 @@ export default function StudentProfile() {
     name: string;
     username: string;
     class: string;
+    photo?: string;
     dateOfBirth?: string;
     parentName?: string;
     contactNumber?: string;
@@ -53,8 +54,14 @@ export default function StudentProfile() {
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <div className="bg-gradient-to-r from-indigo-700 to-purple-700 h-32" />
         <div className="px-8 pb-8">
-          <div className="w-24 h-24 bg-indigo-600 rounded-full border-4 border-white -mt-12 flex items-center justify-center mb-4">
-            <span className="text-white text-3xl font-bold">{student.name.charAt(0)}</span>
+          <div className="-mt-12 mb-4">
+            {student.photo ? (
+              <img src={student.photo} alt={student.name} className="w-24 h-24 rounded-full border-4 border-white object-cover" />
+            ) : (
+              <div className="w-24 h-24 bg-indigo-600 rounded-full border-4 border-white flex items-center justify-center">
+                <span className="text-white text-3xl font-bold">{student.name.charAt(0)}</span>
+              </div>
+            )}
           </div>
 
           <h2 className="text-2xl font-bold text-gray-800">{student.name}</h2>

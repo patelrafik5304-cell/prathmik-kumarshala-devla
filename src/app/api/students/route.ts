@@ -18,10 +18,16 @@ function generatePassword(): string {
 export async function GET() {
   try {
     const db = getAdminDb();
-    const snapshot = await db.collection('students').orderBy('createdAt', 'desc').get();
-    const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await db.collection('students').get();
+    const students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    students.sort((a: any, b: any) => {
+      const dateA = (a as any).createdAt || '';
+      const dateB = (b as any).createdAt || '';
+      return dateB.localeCompare(dateA);
+    });
     return NextResponse.json(students);
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[Students GET] Error:', e);
     return NextResponse.json([]);
   }
 }
@@ -54,6 +60,8 @@ export async function POST(req: NextRequest) {
       password,
       createdAt: new Date().toISOString(),
     });
+
+    console.log('[Students POST] Created:', username, 'with photo:', !!body.photo);
 
     return NextResponse.json({
       id: docRef.id,
