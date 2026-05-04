@@ -46,7 +46,8 @@ export default function ResultsPage() {
   const [uploadSuccess, setUploadSuccess] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResult, setEditingResult] = useState<Result | null>(null);
-  const [editSubjects, setEditSubjects] = useState<Record<string, number>>({});
+  const [editExam, setEditExam] = useState('');
+  const [editMarks, setEditMarks] = useState<Record<string, number>>({});
   const [actionLoading, setActionLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -169,21 +170,24 @@ export default function ResultsPage() {
     } catch (err: any) { alert('Publish failed: ' + err.message); }
   };
 
-  const openEdit = (result: Result) => { setEditingResult(result); setEditSubjects({ ...result.subjects }); setShowEditModal(true); };
+  const openEdit = (result: Result) => {
+    setEditingResult(result);
+    setEditExam(result.exam);
+    setEditMarks({ ...result.subjects });
+    setShowEditModal(true);
+  };
 
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingResult) return;
     setActionLoading(true);
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const subjects: Record<string, number> = {};
+    const subjects = { ...editMarks };
     let total = 0; let count = 0;
-    SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
+    SUBJECTS.forEach((sub) => { const val = subjects[sub]; if (val !== undefined && !isNaN(val)) { total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
     try {
-      const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: fd.get('exam') || editingResult.exam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
+      const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: editExam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
       const data = await res.json();
       if (res.ok) {
         setShowEditModal(false);
@@ -339,10 +343,10 @@ export default function ResultsPage() {
               <div><label className="block text-sm font-semibold text-gray-700 mb-2">Username</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={editingResult.studentUsername} readOnly /></div>
               <div><label className="block text-sm font-semibold text-gray-700 mb-2">Class</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={editingResult.class} readOnly /></div>
             </div>
-            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select name="exam" defaultValue={editingResult.exam} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select value={editExam} onChange={(e) => setEditExam(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
-              {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" defaultValue={editingResult.subjects[sub] ?? ''} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
+              {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input type="number" min="0" max="100" value={editMarks[sub] ?? ''} onChange={(e) => setEditMarks({ ...editMarks, [sub]: parseInt(e.target.value) || 0 })} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
             </div>
             <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Changes</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingResult(null); }}>Cancel</Button></div>
           </form>
