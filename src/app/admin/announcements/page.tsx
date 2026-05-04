@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 interface Announcement {
-  _id: string;
+  id: string;
   title: string;
   content: string;
   priority: 'low' | 'medium' | 'high';
@@ -48,14 +48,14 @@ export default function AnnouncementsPage() {
     await fetch('/api/announcements', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item._id, isActive: !item.isActive }),
+      body: JSON.stringify({ id: item.id, isActive: !item.isActive }),
     });
-    setAnnouncements(announcements.map((a) => (a._id === item._id ? { ...a, isActive: !a.isActive } : a)));
+    setAnnouncements(announcements.map((a) => (a.id === item.id ? { ...a, isActive: !a.isActive } : a)));
   };
 
   const handleDelete = async (id: string) => {
     await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
-    setAnnouncements(announcements.filter((a) => a._id !== id));
+    setAnnouncements(announcements.filter((a) => a.id !== id));
   };
 
   return (
@@ -75,7 +75,7 @@ export default function AnnouncementsPage() {
 
       <div className="space-y-4">
         {announcements.map((a) => (
-          <div key={a._id} className="bg-white rounded-xl shadow p-6">
+          <div key={a.id} className="bg-white rounded-xl shadow p-6">
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
@@ -108,7 +108,7 @@ export default function AnnouncementsPage() {
                   {a.isActive ? 'Deactivate' : 'Activate'}
                 </button>
                 <button className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
-                <button onClick={() => handleDelete(a._id)} className="text-red-600 hover:text-red-800 text-sm">
+                <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800 text-sm">
                   Delete
                 </button>
               </div>

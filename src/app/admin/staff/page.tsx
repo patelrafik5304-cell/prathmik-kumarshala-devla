@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 interface StaffMember {
-  _id: string;
+  id: string;
   name: string;
   designation: string;
   department: string;
@@ -43,7 +43,7 @@ export default function StaffPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Delete this staff member?')) {
       await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
-      setStaff(staff.filter((s) => s._id !== id));
+      setStaff(staff.filter((s) => s.id !== id));
     }
   };
 
@@ -76,7 +76,7 @@ export default function StaffPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {staff.map((s) => (
-              <tr key={s._id} className="hover:bg-gray-50">
+              <tr key={s.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium">{s.name}</td>
                 <td className="px-6 py-4">{s.designation}</td>
                 <td className="px-6 py-4">{s.department}</td>
@@ -85,7 +85,7 @@ export default function StaffPage() {
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button className="text-indigo-600 hover:text-indigo-800">Edit</button>
-                    <button onClick={() => handleDelete(s._id)} className="text-red-600 hover:text-red-800">
+                    <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800">
                       Delete
                     </button>
                   </div>

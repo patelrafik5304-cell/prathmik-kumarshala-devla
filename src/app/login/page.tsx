@@ -5,17 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'admin' | 'student'>('admin');
   const router = useRouter();
-  const { user, demoUser, loginDemo } = useAuth();
+  const { user, role, login } = useAuth();
 
-  if (user || demoUser) {
-    router.push('/admin');
+  if (user) {
+    router.push(role === 'admin' ? '/admin' : '/student');
     return null;
   }
 
@@ -24,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await loginDemo(username, password, role);
+      await login(email, password);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -35,7 +34,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        {/* Logo and Title */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-16 h-16 bg-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white text-2xl font-bold">P</span>
@@ -46,35 +44,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Role Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-          <div className="flex gap-6">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="role"
-                value="admin"
-                checked={role === 'admin'}
-                onChange={() => setRole('admin')}
-                className="w-4 h-4 text-teal-600 border-gray-300 focus:ring-teal-500"
-              />
-              <span className="ml-2 text-gray-700">Staff</span>
-            </label>
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="radio"
-                name="role"
-                value="student"
-                checked={role === 'student'}
-                onChange={() => setRole('student')}
-                className="w-4 h-4 text-teal-600 border-gray-300 focus:ring-teal-500"
-              />
-              <span className="ml-2 text-gray-700">Student</span>
-            </label>
-          </div>
-        </div>
-
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{error}</div>
         )}
@@ -82,14 +51,14 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
+              Email
             </label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
-              placeholder="Mobile No. / Email / Staff Code"
+              placeholder="your@email.com"
               required
             />
           </div>

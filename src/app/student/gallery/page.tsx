@@ -18,7 +18,7 @@ export default function StudentGallery() {
   useEffect(() => {
     fetch('/api/gallery')
       .then((r) => r.json())
-      .then((data) => setGalleryItems(data));
+      .then((data) => setGalleryItems(Array.isArray(data) ? data : []));
   }, []);
 
   const categories = ['All', 'Events', 'Academic', 'Sports', 'Infrastructure'];
@@ -46,8 +46,14 @@ export default function StudentGallery() {
       <div className="grid md:grid-cols-3 gap-6">
         {filtered.map((item) => (
           <div key={item._id} className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition">
-            <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-              <span className="text-white text-4xl">🖼️</span>
+            <div className="h-48 overflow-hidden">
+              {item.imageUrl ? (
+                <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                  <span className="text-white text-4xl">Gallery</span>
+                </div>
+              )}
             </div>
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">

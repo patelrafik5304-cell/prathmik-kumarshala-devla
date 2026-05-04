@@ -1,51 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/mongodb';
-import Result from '@/models/Result';
+import { getAdminDb } from '@/lib/firebase-admin';
 
 export async function GET() {
   try {
-    await connectDB();
+    const db = getAdminDb();
+    const snapshot = await db.collection('results').orderBy('createdAt', 'desc').get();
+    const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return NextResponse.json(results);
   } catch (e) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    return NextResponse.json([]);
   }
-  const results = await Result.find().sort({ createdAt: -1 });
-  return NextResponse.json(results);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    const db = getAdminDb();
+    const body = await req.json();
+    const items = Array.isArray(body) ? body : [body];
+    const batch = db.batch();
+    items.forEach(item => {
+      const ref = db.collection('results').doc();
+      batch.set(ref, { ...item, createdAt: new Date().toISOString() });
+    });
+    await batch.commit();
+    return NextResponse.json({ success: true, count: items.length }, { status: 201 });
   } catch (e) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save results' }, { status: 500 });
   }
-  const body = await req.json();
-  const results = Array.isArray(body)
-    ? await Result.insertMany(body)
-    : [await Result.create(body)];
-  return NextResponse.json(results, { status: 201 });
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectDB();
+    const db = getAdminDb();
+    const { id, ...data } = await req.json();
+    await db.collection('results').doc(id).update(data);
+    return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
-  const { id, ...data } = await req.json();
-  const result = await Result.findByIdAndUpdate(id, data, { new: true });
-  if (!result) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json(result);
 }
 
 export async function DELETE(req: NextRequest) {
   try {
-    await connectDB();
+    const db = getAdminDb();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    await db.collection('results').doc(id).delete();
+    return NextResponse.json({ success: true });
   } catch (e) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get('id');
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-  await Result.findByIdAndDelete(id);
-  return NextResponse.json({ success: true });
 }

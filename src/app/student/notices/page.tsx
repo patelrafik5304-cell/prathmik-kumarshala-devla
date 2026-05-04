@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 interface Notice {
-  _id: string;
+  id: string;
   title: string;
   content: string;
   priority: string;
@@ -17,7 +17,7 @@ export default function StudentNotices() {
   useEffect(() => {
     fetch('/api/announcements')
       .then((r) => r.json())
-      .then((data) => setNotices(data.filter((n: Notice) => n.isActive)));
+      .then((data) => setNotices(Array.isArray(data) ? data.filter((n: Notice) => n.isActive) : []));
   }, []);
 
   return (
@@ -30,7 +30,7 @@ export default function StudentNotices() {
       ) : (
         <div className="space-y-4">
           {notices.map((n) => (
-            <div key={n._id} className="bg-white rounded-xl shadow p-6">
+            <div key={n.id} className="bg-white rounded-xl shadow p-6">
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">{n.title}</h3>

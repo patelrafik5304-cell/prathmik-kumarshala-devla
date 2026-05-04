@@ -19,7 +19,7 @@ export default function StudentResults() {
   useEffect(() => {
     fetch('/api/results')
       .then((r) => r.json())
-      .then((data) => setResults(data));
+      .then((data) => setResults(Array.isArray(data) ? data : []));
   }, []);
 
   const groupedByExam = results.reduce<Record<string, Result[]>>((acc, r) => {

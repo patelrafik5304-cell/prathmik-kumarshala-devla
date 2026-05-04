@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 interface StaffMember {
-  _id: string;
+  id: string;
   name: string;
   designation: string;
   department: string;
@@ -18,7 +18,7 @@ export default function StudentStaff() {
   useEffect(() => {
     fetch('/api/staff')
       .then((r) => r.json())
-      .then((data) => setStaffMembers(data));
+      .then((data) => setStaffMembers(Array.isArray(data) ? data : []));
   }, []);
 
   const departments = ['All', ...Array.from(new Set(staffMembers.map((s) => s.department)))];
@@ -45,7 +45,7 @@ export default function StudentStaff() {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((staff) => (
-          <div key={staff._id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
+          <div key={staff.id} className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition">
             <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mb-4">
               <span className="text-white text-2xl font-bold">{staff.name.charAt(0)}</span>
             </div>

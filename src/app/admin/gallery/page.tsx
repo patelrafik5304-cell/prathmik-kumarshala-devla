@@ -15,32 +15,37 @@ export default function GalleryPage() {
   const [images, setImages] = useState<GalleryItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Events', description: '' });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetch('/api/gallery')
       .then((r) => r.json())
-      .then((data) => setImages(data));
+      .then((data) => setImages(Array.isArray(data) ? data : []));
   }, []);
 
   const refetch = () => {
     fetch('/api/gallery')
       .then((r) => r.json())
-      .then((data) => setImages(data));
+      .then((data) => setImages(Array.isArray(data) ? data : []));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData();
+    formData.append('title', form.title);
+    formData.append('category', form.category);
+    formData.append('description', form.description);
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
     await fetch('/api/gallery', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        imageUrl: '',
-        date: new Date().toISOString().split('T')[0],
-      }),
+      body: formData,
     });
     setShowModal(false);
     setForm({ title: '', category: 'Events', description: '' });
+    setImageFile(null);
     refetch();
   };
 
@@ -67,8 +72,14 @@ export default function GalleryPage() {
       <div className="grid md:grid-cols-3 gap-6">
         {images.map((img) => (
           <div key={img._id} className="bg-white rounded-xl shadow overflow-hidden">
-            <div className="h-48 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-              <span className="text-white text-4xl">🖼️</span>
+            <div className="h-48 overflow-hidden">
+              {img.imageUrl ? (
+                <img src={img.imageUrl} alt={img.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
+                  <span className="text-white text-4xl">Gallery</span>
+                </div>
+              )}
             </div>
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
@@ -127,7 +138,12 @@ export default function GalleryPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
-                <input type="file" className="w-full text-sm text-gray-500" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500"
+                />
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">

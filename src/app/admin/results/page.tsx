@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 interface Result {
-  _id: string;
+  id: string;
   studentName: string;
   rollNumber: string;
   class: string;
@@ -38,7 +38,7 @@ export default function ResultsPage() {
   const fetchResults = async () => {
     const res = await fetch('/api/results');
     const data = await res.json();
-    setResults(data);
+    setResults(Array.isArray(data) ? data : []);
   };
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function ResultsPage() {
   const refetch = async () => {
     const res = await fetch('/api/results');
     const data = await res.json();
-    setResults(data);
+    setResults(Array.isArray(data) ? data : []);
   };
 
   const filtered = results.filter(
@@ -125,7 +125,7 @@ export default function ResultsPage() {
       const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
 
       acc.push({
-        _id: '',
+        id: '',
         rollNumber,
         studentName,
         class: cls,
@@ -172,7 +172,7 @@ export default function ResultsPage() {
 
   const handleDelete = async (id: string) => {
     await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
-    setResults(results.filter((r) => r._id !== id));
+    setResults(results.filter((r) => r.id !== id));
   };
 
   const handleAddResult = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -264,7 +264,7 @@ export default function ResultsPage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filtered.map((result) => (
-              <tr key={result._id} className="hover:bg-gray-50">
+              <tr key={result.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium">{result.rollNumber}</td>
                 <td className="px-6 py-4">{result.studentName}</td>
                 <td className="px-6 py-4">{result.class}</td>
@@ -278,7 +278,7 @@ export default function ResultsPage() {
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button className="text-indigo-600 hover:text-indigo-800">View</button>
-                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result._id)}>Delete</button>
+                    <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result.id)}>Delete</button>
                   </div>
                 </td>
               </tr>
