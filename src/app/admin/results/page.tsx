@@ -65,7 +65,7 @@ export default function ResultsPage() {
       return;
     }
 
-    const header = ['Username', 'Student Name', 'Class', 'Exam', ...SUBJECTS].join(',');
+    const header = ['Username', 'Student', 'Class', 'Exam', ...SUBJECTS].join(',');
     const rows = classStudents.map((s) => {
       const vals = [s.username, s.name, s.class, 'Mid-term'];
       SUBJECTS.forEach(() => vals.push(''));
@@ -133,6 +133,12 @@ export default function ResultsPage() {
       const vals = line.split(',');
       const row: Record<string, string> = {};
       headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
+      if (row['student'] && !row['student name']) {
+        row['student name'] = row['student'];
+      }
+      if (!row['student name'] && row['name']) {
+        row['student name'] = row['name'];
+      }
       return row;
     });
     console.log('[Upload] Raw rows:', rawRows);
@@ -152,8 +158,12 @@ export default function ResultsPage() {
     const rows = json.map((row) => {
       const normalized: Record<string, string> = {};
       Object.keys(row).forEach((key) => {
-        normalized[key.toLowerCase().trim()] = String(row[key] ?? '');
+        const k = key.toLowerCase().trim();
+        normalized[k] = String(row[key] ?? '');
       });
+      if (normalized['student'] && !normalized['student name']) {
+        normalized['student name'] = normalized['student'];
+      }
       return normalized;
     }).filter((row) => row['username'] && row['student name']);
     processRows(rows);
