@@ -6,15 +6,12 @@ interface StaffMember {
   id: string;
   name: string;
   designation: string;
-  department: string;
-  email: string;
-  contact: string;
 }
 
 export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', designation: '', department: '', email: '', contact: '' });
+  const [form, setForm] = useState({ name: '', designation: '' });
 
   useEffect(() => {
     fetch('/api/staff')
@@ -36,7 +33,7 @@ export default function StaffPage() {
       body: JSON.stringify(form),
     });
     setShowModal(false);
-    setForm({ name: '', designation: '', department: '', email: '', contact: '' });
+    setForm({ name: '', designation: '' });
     refetch();
   };
 
@@ -68,9 +65,6 @@ export default function StaffPage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Designation</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
@@ -79,9 +73,6 @@ export default function StaffPage() {
               <tr key={s.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 font-medium">{s.name}</td>
                 <td className="px-6 py-4">{s.designation}</td>
-                <td className="px-6 py-4">{s.department}</td>
-                <td className="px-6 py-4">{s.email}</td>
-                <td className="px-6 py-4">{s.contact}</td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button className="text-indigo-600 hover:text-indigo-800">Edit</button>
@@ -101,18 +92,26 @@ export default function StaffPage() {
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Add Staff</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {['name', 'designation', 'department', 'email', 'contact'].map((field) => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{field}</label>
-                  <input
-                    type={field === 'email' ? 'email' : 'text'}
-                    value={(form as any)[field]}
-                    onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    required
-                  />
-                </div>
-              ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                <input
+                  type="text"
+                  value={form.designation}
+                  onChange={(e) => setForm({ ...form, designation: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  required
+                />
+              </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
                   Add
