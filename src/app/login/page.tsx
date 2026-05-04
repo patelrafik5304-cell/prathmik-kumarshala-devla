@@ -5,16 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const { user, role, login } = useAuth();
+  const { user, login } = useAuth();
 
   if (user) {
-    router.push(role === 'admin' ? '/admin' : '/student');
+    router.push(user.role === 'admin' ? '/admin' : '/student');
     return null;
   }
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
+      await login(username, password);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -51,14 +51,14 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+              Username
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition"
-              placeholder="your@email.com"
+              placeholder="Enter username"
               required
             />
           </div>

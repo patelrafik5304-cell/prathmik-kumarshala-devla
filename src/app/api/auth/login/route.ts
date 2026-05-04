@@ -3,39 +3,42 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, role } = await request.json();
+    const { username, password, role } = await request.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    if (!username || !password) {
+      return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
-    const auth = getAdminAuth();
-    const userRecord = await auth.getUserByEmail(email);
+    if (username === 'admin' && password === 'admin123') {
+      return NextResponse.json({
+        success: true,
+        role: 'admin',
+        username: 'admin',
+      });
+    }
 
-    if (!userRecord) {
+    const db = getAdminDb();
+    const studentDoc = await db.collection('students')
+      .where('username', '==', username)
+      .get();
+
+    if (studentDoc.empty) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    await auth.setCustomUserClaims(userRecord.uid, { role: role || 'student' });
+    const studentData = studentDoc.docs[0].data();
 
-    const db = getAdminDb();
-    await db.collection('users').doc(userRecord.uid).set({
-      email: userRecord.email,
-      displayName: userRecord.displayName || '',
-      role: role || 'student',
-      createdAt: new Date().toISOString(),
-    }, { merge: true });
+    if (studentData.password !== password) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
 
     return NextResponse.json({
       success: true,
-      uid: userRecord.uid,
-      email: userRecord.email,
-      role: role || 'student',
+      role: 'student',
+      username: studentData.username,
+      name: studentData.name,
     });
   } catch (error: any) {
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }

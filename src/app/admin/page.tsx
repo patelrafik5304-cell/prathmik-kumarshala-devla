@@ -1,36 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
-const stats = [
-  { label: 'Total Students', value: '1,248', color: 'bg-blue-500' },
-  { label: 'Total Staff', value: '86', color: 'bg-green-500' },
-  { label: 'Present Today', value: '1,156', color: 'bg-emerald-500' },
-  { label: 'Absent Today', value: '92', color: 'bg-red-500' },
-];
-
-const recentAnnouncements = [
-  { id: 1, title: 'Annual Sports Day', date: '2026-05-03', priority: 'high' },
-  { id: 2, title: 'Mid-term Exam Schedule', date: '2026-05-01', priority: 'medium' },
-  { id: 3, title: 'Parent-Teacher Meeting', date: '2026-04-28', priority: 'high' },
-];
-
-const recentResults = [
-  { id: 1, student: 'John Doe', class: '10-A', exam: 'Mid-term', percentage: '92%' },
-  { id: 2, student: 'Jane Smith', class: '10-A', exam: 'Mid-term', percentage: '88%' },
-  { id: 3, student: 'Mike Johnson', class: '10-B', exam: 'Mid-term', percentage: '95%' },
-];
-
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const [counts, setCounts] = useState({ students: 0, staff: 0, announcements: 0, results: 0 });
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/students').then(r => r.json()),
+      fetch('/api/staff').then(r => r.json()),
+      fetch('/api/announcements').then(r => r.json()),
+      fetch('/api/results').then(r => r.json()),
+    ]).then(([students, staff, announcements, results]) => {
+      setCounts({
+        students: Array.isArray(students) ? students.length : 0,
+        staff: Array.isArray(staff) ? staff.length : 0,
+        announcements: Array.isArray(announcements) ? announcements.length : 0,
+        results: Array.isArray(results) ? results.length : 0,
+      });
+    });
+  }, []);
+
+  const stats = [
+    { label: 'Total Students', value: String(counts.students), color: 'bg-blue-500' },
+    { label: 'Total Staff', value: String(counts.staff), color: 'bg-green-500' },
+    { label: 'Announcements', value: String(counts.announcements), color: 'bg-purple-500' },
+    { label: 'Results', value: String(counts.results), color: 'bg-orange-500' },
+  ];
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500">Welcome back, Admin</p>
+        <p className="text-gray-500">Welcome back, {user?.name || 'Admin'}</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat, i) => (
           <div key={i} className="bg-white rounded-xl shadow p-6">
@@ -46,56 +53,29 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Announcements */}
         <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Recent Announcements</h2>
-            <Link href="/admin/announcements" className="text-indigo-600 text-sm hover:underline">
-              View All
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Links</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/admin/students" className="p-4 bg-blue-50 rounded-lg text-center hover:bg-blue-100 transition">
+              <p className="font-medium text-blue-700">Manage Students</p>
             </Link>
-          </div>
-          <div className="space-y-3">
-            {recentAnnouncements.map((a) => (
-              <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">{a.title}</p>
-                  <p className="text-sm text-gray-500">{a.date}</p>
-                </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    a.priority === 'high'
-                      ? 'bg-red-100 text-red-700'
-                      : a.priority === 'medium'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-green-100 text-green-700'
-                  }`}
-                >
-                  {a.priority}
-                </span>
-              </div>
-            ))}
+            <Link href="/admin/staff" className="p-4 bg-green-50 rounded-lg text-center hover:bg-green-100 transition">
+              <p className="font-medium text-green-700">Manage Staff</p>
+            </Link>
+            <Link href="/admin/results" className="p-4 bg-orange-50 rounded-lg text-center hover:bg-orange-100 transition">
+              <p className="font-medium text-orange-700">Results</p>
+            </Link>
+            <Link href="/admin/announcements" className="p-4 bg-purple-50 rounded-lg text-center hover:bg-purple-100 transition">
+              <p className="font-medium text-purple-700">Announcements</p>
+            </Link>
           </div>
         </div>
 
-        {/* Recent Results */}
         <div className="bg-white rounded-xl shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Recent Results</h2>
-            <Link href="/admin/results" className="text-indigo-600 text-sm hover:underline">
-              View All
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {recentResults.map((r) => (
-              <div key={r.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-800">{r.student}</p>
-                  <p className="text-sm text-gray-500">Class {r.class} - {r.exam}</p>
-                </div>
-                <span className="font-bold text-indigo-600">{r.percentage}</span>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Gallery</h2>
+          <Link href="/admin/gallery" className="p-4 bg-indigo-50 rounded-lg text-center hover:bg-indigo-100 transition block">
+            <p className="font-medium text-indigo-700">Manage Photos</p>
+          </Link>
         </div>
       </div>
     </div>
