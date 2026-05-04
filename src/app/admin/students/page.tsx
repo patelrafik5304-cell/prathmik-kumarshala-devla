@@ -171,7 +171,7 @@ export default function StudentsPage() {
   };
 
   const downloadTemplate = () => {
-    const csv = 'name,childuid,class\nJohn Doe,CHILD001,5\nJane Smith,CHILD002,3';
+    const csv = 'name,childuid,class\njohn,43552,2\njane,35364,3';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
