@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     await batch.commit();
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });
   } catch (e: any) {
-    console.error('[Results] Error:', e);
+    console.error('[Results POST] Error:', e);
     return NextResponse.json({ error: e.message || 'Failed to save results' }, { status: 500 });
   }
 }
@@ -86,7 +86,21 @@ export async function PUT(req: NextRequest) {
     const { id, ...data } = body;
     console.log('[Results PUT] id:', id, 'data:', JSON.stringify(data));
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
-    await db.collection('results').doc(id).update(data);
+    const docRef = db.collection('results').doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: 'Result not found' }, { status: 404 });
+    }
+    const cleanData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        cleanData[key] = value;
+      }
+    }
+    if (Object.keys(cleanData).length === 0) {
+      return NextResponse.json({ error: 'No valid data to update' }, { status: 400 });
+    }
+    await docRef.update(cleanData);
     console.log('[Results PUT] Success');
     return NextResponse.json({ success: true });
   } catch (e: any) {
@@ -101,9 +115,14 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    const doc = await db.collection('results').doc(id).get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: 'Result not found' }, { status: 404 });
+    }
     await db.collection('results').doc(id).delete();
     return NextResponse.json({ success: true });
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  } catch (e: any) {
+    console.error('[Results DELETE] Error:', e);
+    return NextResponse.json({ error: e.message || 'Failed to delete' }, { status: 500 });
   }
 }
