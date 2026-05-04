@@ -1,12 +1,11 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
-import LoadingOverlay from '@/components/ui/LoadingOverlay';
 
 interface Student {
   id: string;
@@ -38,7 +37,6 @@ export default function StudentsPage() {
   const [form, setForm] = useState({ name: '', childUid: '', class: '', photo: '' });
   const [newCreds, setNewCreds] = useState<{ username: string; password: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
@@ -53,10 +51,7 @@ export default function StudentsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/students').then((r) => r.json()).then((data) => {
-      setStudents(Array.isArray(data) ? data : []);
-      setInitialLoading(false);
-    });
+    fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
   }, []);
 
   const filtered = students.filter(
@@ -192,8 +187,6 @@ export default function StudentsPage() {
 
   return (
     <div>
-      <LoadingOverlay loading={initialLoading} message="Loading students..." />
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Students Management</h1>
