@@ -171,7 +171,7 @@ export default function StudentsPage() {
   };
 
   const downloadTemplate = () => {
-    const csv = 'Name,Child UID,Class\nJohn Doe,CHILD001,5\nJane Smith,CHILD002,3';
+    const csv = 'Name,CHILDUID,Class\nJohn Doe,CHILD001,5\nJane Smith,CHILD002,3';
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -342,7 +342,7 @@ export default function StudentsPage() {
               <FileSpreadsheet className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-blue-800">CSV Format Required</p>
-                <p className="text-xs text-blue-600 mt-1">Your CSV must have headers: <code className="bg-blue-100 px-1 rounded">Name, Child UID, Class</code></p>
+                <p className="text-xs text-blue-600 mt-1">Your CSV must have headers: <code className="bg-blue-100 px-1 rounded">Name, CHILDUID, Class</code></p>
               </div>
             </div>
           </div>
