@@ -120,18 +120,30 @@ export default function ResultsPage() {
 
   const parseCSVText = (text: string) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
+    console.log('[Upload] Raw CSV text:', text);
     const lines = text.trim().split('\n');
     if (lines.length < 2) {
       setUploadMsg('CSV file has no data rows.');
       return;
     }
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const rows = lines.slice(1).map((line) => {
+    console.log('[Upload] CSV headers:', headers);
+    console.log('[Upload] CSV first data row:', lines[1]);
+    const rawRows = lines.slice(1).map((line) => {
       const vals = line.split(',');
       const row: Record<string, string> = {};
       headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
       return row;
-    }).filter((row) => row['username'] && row['student name']);
+    });
+    console.log('[Upload] Raw rows:', rawRows);
+    const rows = rawRows.filter((row) => {
+      const hasUsername = !!row['username'];
+      const hasName = !!row['student name'];
+      if (!hasUsername || !hasName) {
+        console.log('[Upload] Row rejected — username:', row['username'], '| student name:', row['student name']);
+      }
+      return hasUsername && hasName;
+    });
     processRows(rows);
   };
 
