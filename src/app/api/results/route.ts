@@ -44,8 +44,9 @@ export async function POST(req: NextRequest) {
       const batch = db.batch();
       toDelete.forEach((doc: any) => batch.delete(doc.ref));
       records.forEach((record: any) => {
+        const { id, ...rest } = record;
         const ref = db.collection('results').doc();
-        batch.set(ref, { ...record, createdAt: new Date().toISOString() });
+        batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
       });
 
       await batch.commit();
@@ -56,8 +57,9 @@ export async function POST(req: NextRequest) {
     const items = Array.isArray(body) ? body : [body];
     const batch = db.batch();
     items.forEach(item => {
+      const { id, ...rest } = item;
       const ref = db.collection('results').doc();
-      batch.set(ref, { ...item, createdAt: new Date().toISOString() });
+      batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
     });
     await batch.commit();
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });
@@ -70,11 +72,13 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getAdminDb();
-    const { id, ...data } = await req.json();
+    const body = await req.json();
+    const { id, ...data } = body;
+    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     await db.collection('results').doc(id).update(data);
     return NextResponse.json({ success: true });
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'Failed to update' }, { status: 500 });
   }
 }
 

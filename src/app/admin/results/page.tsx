@@ -13,6 +13,7 @@ interface Result {
   percentage: string;
   grade: string;
   subjects: Record<string, number>;
+  published: boolean;
 }
 
 const SUBJECTS = ['Math', 'Science', 'English', 'Social', 'Hindi'];
@@ -38,6 +39,9 @@ export default function ResultsPage() {
   const [preview, setPreview] = useState<Result[]>([]);
   const [uploadMsg, setUploadMsg] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingResult, setEditingResult] = useState<Result | null>(null);
+  const [editSubjects, setEditSubjects] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export default function ResultsPage() {
       return;
     }
 
-    const header = ['Username', 'Student', 'Class', 'Exam', ...SUBJECTS].join(',');
+    const header = ['Username', 'Name', 'Class', 'Exam', ...SUBJECTS].join(',');
     const rows = classStudents.map((s) => {
       const vals = [s.username, s.name, s.class, 'Mid-term'];
       SUBJECTS.forEach(() => vals.push(''));
@@ -133,11 +137,10 @@ export default function ResultsPage() {
       const vals = line.split(',');
       const row: Record<string, string> = {};
       headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
-      if (row['student'] && !row['student name']) {
-        row['student name'] = row['student'];
-      }
-      if (!row['student name'] && row['name']) {
+      if (row['name']) {
         row['student name'] = row['name'];
+      } else if (row['student']) {
+        row['student name'] = row['student'];
       }
       return row;
     });
@@ -201,6 +204,7 @@ export default function ResultsPage() {
         subjects,
         percentage: `${pct}%`,
         grade: calculateGrade(pct),
+        published: false,
       };
     });
 
@@ -246,8 +250,70 @@ export default function ResultsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
-    setResults(results.filter((r) => r.id !== id));
+    const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      fetch('/api/results')
+        .then((r) => r.json())
+        .then((d) => setResults(Array.isArray(d) ? d : []));
+    }
+  };
+
+  const handleTogglePublish = async (id: string, current: boolean) => {
+    const res = await fetch('/api/results', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, published: !current }),
+    });
+    if (res.ok) {
+      fetch('/api/results')
+        .then((r) => r.json())
+        .then((d) => setResults(Array.isArray(d) ? d : []));
+    }
+  };
+
+  const openEdit = (result: Result) => {
+    setEditingResult(result);
+    setEditSubjects({ ...result.subjects });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingResult) return;
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const subjects: Record<string, number> = {};
+    let total = 0;
+    let count = 0;
+    SUBJECTS.forEach((sub) => {
+      const val = parseInt(fd.get(sub) as string);
+      if (!isNaN(val)) {
+        subjects[sub] = val;
+        total += val;
+        count++;
+      }
+    });
+    const maxMarks = count * 100;
+    const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
+
+    const res = await fetch('/api/results', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editingResult.id,
+        exam: fd.get('exam') || editingResult.exam,
+        subjects,
+        percentage: `${pct}%`,
+        grade: calculateGrade(pct),
+      }),
+    });
+    if (res.ok) {
+      setShowEditModal(false);
+      setEditingResult(null);
+      fetch('/api/results')
+        .then((r) => r.json())
+        .then((d) => setResults(Array.isArray(d) ? d : []));
+    }
   };
 
   const handleAddResult = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -344,36 +410,48 @@ export default function ResultsPage() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filtered.map((result) => (
               <tr key={result.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-mono text-indigo-600">{result.studentUsername}</td>
-                <td className="px-6 py-4">{result.studentName}</td>
-                <td className="px-6 py-4">{result.class}</td>
-                <td className="px-6 py-4">{result.exam}</td>
-                <td className="px-6 py-4 font-medium">{result.percentage}</td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-4 font-mono text-indigo-600">{result.studentUsername}</td>
+                <td className="px-4 py-4">{result.studentName}</td>
+                <td className="px-4 py-4">{result.class}</td>
+                <td className="px-4 py-4">{result.exam}</td>
+                <td className="px-4 py-4 font-medium">{result.percentage}</td>
+                <td className="px-4 py-4">
                   <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-medium">
                     {result.grade}
                   </span>
                 </td>
-                <td className="px-6 py-4">
-                  <button className="text-red-600 hover:text-red-800" onClick={() => handleDelete(result.id)}>Delete</button>
+                <td className="px-4 py-4">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${result.published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {result.published ? 'Published' : 'Unpublished'}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <div className="flex gap-2">
+                    <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => openEdit(result)}>Edit</button>
+                    <button className={`text-sm ${result.published ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'}`} onClick={() => handleTogglePublish(result.id, result.published)}>
+                      {result.published ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => handleDelete(result.id)}>Delete</button>
+                  </div>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No results found</td>
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No results found</td>
               </tr>
             )}
           </tbody>
@@ -512,6 +590,53 @@ export default function ResultsPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+            <h2 className="text-xl font-bold mb-4">Edit Result — {editingResult.studentName}</h2>
+            <form className="space-y-4" onSubmit={handleSaveEdit}>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={editingResult.studentUsername} readOnly />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={editingResult.class} readOnly />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
+                <select name="exam" defaultValue={editingResult.exam} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <option>Mid-term</option>
+                  <option>Final</option>
+                  <option>Unit Test</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Subjects (Marks)</label>
+                {SUBJECTS.map((sub) => (
+                  <div key={sub} className="flex items-center gap-3 mb-2">
+                    <span className="w-20 text-sm">{sub}</span>
+                    <input name={sub} type="number" min="0" max="100" defaultValue={editingResult.subjects[sub] ?? ''} className="flex-1 px-3 py-1 border border-gray-300 rounded" />
+                    <span className="text-sm text-gray-500">/100</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
+                  Save Changes
+                </button>
+                <button type="button" onClick={() => { setShowEditModal(false); setEditingResult(null); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

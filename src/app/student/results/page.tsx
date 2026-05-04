@@ -13,6 +13,7 @@ interface Result {
   percentage: string;
   grade: string;
   subjects: Record<string, number>;
+  published: boolean;
 }
 
 export default function StudentResults() {
@@ -24,7 +25,7 @@ export default function StudentResults() {
       .then((r) => r.json())
       .then((data) => {
         const all = Array.isArray(data) ? data : [];
-        const myResults = all.filter((r: Result) => r.studentUsername === user?.username);
+        const myResults = all.filter((r: Result) => r.studentUsername === user?.username && r.published);
         setResults(myResults);
       });
   }, [user]);
