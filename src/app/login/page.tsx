@@ -43,7 +43,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await login(username, password);
+      await login(username, password, remember);
       if (remember) {
         localStorage.setItem('rememberedUser', JSON.stringify({ username }));
       } else {

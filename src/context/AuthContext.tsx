@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   user: { username: string; name: string; role: string; class?: string } | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, remember: boolean = true) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -38,13 +38,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const userObj = { username: data.username, name: data.name || 'Admin', role: data.role, class: data.class || '' };
     setUser(userObj);
-    localStorage.setItem('authUser', JSON.stringify(userObj));
+    if (remember) {
+      localStorage.setItem('authUser', JSON.stringify(userObj));
+    }
     router.push(data.role === 'admin' ? '/admin' : '/student');
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('authUser');
+    localStorage.removeItem('rememberedUser');
     router.push('/login');
   };
 
