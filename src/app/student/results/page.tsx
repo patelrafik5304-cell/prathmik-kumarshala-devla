@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 interface Result {
-  _id: string;
+  id: string;
+  studentUsername: string;
   studentName: string;
   rollNumber: string;
   class: string;
@@ -14,13 +16,18 @@ interface Result {
 }
 
 export default function StudentResults() {
+  const { user } = useAuth();
   const [results, setResults] = useState<Result[]>([]);
 
   useEffect(() => {
     fetch('/api/results')
       .then((r) => r.json())
-      .then((data) => setResults(Array.isArray(data) ? data : []));
-  }, []);
+      .then((data) => {
+        const all = Array.isArray(data) ? data : [];
+        const myResults = all.filter((r: Result) => r.studentUsername === user?.username);
+        setResults(myResults);
+      });
+  }, [user]);
 
   const groupedByExam = results.reduce<Record<string, Result[]>>((acc, r) => {
     if (!acc[r.exam]) acc[r.exam] = [];

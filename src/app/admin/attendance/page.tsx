@@ -1,30 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const classes = ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B'];
-const students = [
-  { id: 1, rollNumber: 'STU001', name: 'John Doe', class: '10-A' },
-  { id: 2, rollNumber: 'STU002', name: 'Jane Smith', class: '10-A' },
-  { id: 3, rollNumber: 'STU003', name: 'Mike Johnson', class: '10-B' },
-  { id: 4, rollNumber: 'STU004', name: 'Sarah Williams', class: '9-A' },
-  { id: 5, rollNumber: 'STU005', name: 'David Brown', class: '9-B' },
-];
+interface Student {
+  id: string;
+  username: string;
+  name: string;
+  class: string;
+}
 
 export default function AttendancePage() {
-  const [selectedClass, setSelectedClass] = useState('10-A');
+  const [students, setStudents] = useState<Student[]>([]);
+  const [selectedClass, setSelectedClass] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [attendance, setAttendance] = useState<Record<number, string>>({});
+  const [attendance, setAttendance] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [savedMsg, setSavedMsg] = useState('');
+
+  useEffect(() => {
+    fetch('/api/students')
+      .then((r) => r.json())
+      .then((data) => {
+        setStudents(Array.isArray(data) ? data : []);
+        if (data.length > 0 && !selectedClass) {
+          setSelectedClass(data[0].class);
+        }
+      });
+  }, []);
+
+  const classes = [...new Set(students.map((s) => s.class))].sort((a, b) => {
+    const numA = parseInt(a) || 0;
+    const numB = parseInt(b) || 0;
+    return numA - numB;
+  });
 
   const filteredStudents = students.filter((s) => s.class === selectedClass);
 
-  const handleAttendance = (studentId: number, status: string) => {
+  useEffect(() => {
+    const initial: Record<string, string> = {};
+    filteredStudents.forEach((s) => {
+      initial[s.id] = '';
+    });
+    setAttendance(initial);
+  }, [selectedClass, filteredStudents.length]);
+
+  const handleAttendance = (studentId: string, status: string) => {
     setAttendance({ ...attendance, [studentId]: status });
   };
 
-  const handleSubmit = () => {
-    alert('Attendance saved successfully!');
-    console.log('Attendance:', { date, class: selectedClass, attendance });
+  const handleSubmit = async () => {
+    setLoading(true);
+    setSavedMsg('');
+
+    const records = filteredStudents.map((student) => ({
+      studentId: student.id,
+      studentUsername: student.username,
+      studentName: student.name,
+      class: student.class,
+      date,
+      status: attendance[student.id] || 'absent',
+    }));
+
+    await fetch('/api/attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(records),
+    });
+
+    setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
+    setLoading(false);
+    setTimeout(() => setSavedMsg(''), 3000);
   };
 
   const presentCount = Object.values(attendance).filter((v) => v === 'present').length;
@@ -35,7 +80,10 @@ export default function AttendancePage() {
       <h1 className="text-3xl font-bold text-gray-800 mb-2">Attendance Management</h1>
       <p className="text-gray-500 mb-8">Mark and track student attendance</p>
 
-      {/* Controls */}
+      {savedMsg && (
+        <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm">{savedMsg}</div>
+      )}
+
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <div className="grid md:grid-cols-3 gap-4">
           <div>
@@ -55,7 +103,7 @@ export default function AttendancePage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg"
             >
               {classes.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>Class {c}</option>
               ))}
             </select>
           </div>
@@ -68,12 +116,11 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Attendance Table */}
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Roll No</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -82,7 +129,7 @@ export default function AttendancePage() {
           <tbody className="divide-y divide-gray-200">
             {filteredStudents.map((student) => (
               <tr key={student.id}>
-                <td className="px-6 py-4 font-medium">{student.rollNumber}</td>
+                <td className="px-6 py-4 font-mono text-indigo-600">{student.username}</td>
                 <td className="px-6 py-4">{student.name}</td>
                 <td className="px-6 py-4">
                   <span
@@ -123,19 +170,24 @@ export default function AttendancePage() {
                 </td>
               </tr>
             ))}
+            {filteredStudents.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  No students in this class
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-6 flex gap-3">
+      <div className="mt-6">
         <button
           onClick={handleSubmit}
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+          disabled={loading}
+          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
         >
-          Save Attendance
-        </button>
-        <button className="border border-gray-300 px-6 py-2 rounded-lg hover:bg-gray-50">
-          📥 Export Report
+          {loading ? 'Saving...' : 'Save Attendance'}
         </button>
       </div>
     </div>

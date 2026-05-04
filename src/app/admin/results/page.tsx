@@ -26,6 +26,8 @@ function calculateGrade(pct: number): string {
 
 export default function ResultsPage() {
   const [results, setResults] = useState<Result[]>([]);
+  const [students, setStudents] = useState<{ id: string; username: string; name: string; class: string }[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [search, setSearch] = useState('');
@@ -43,6 +45,9 @@ export default function ResultsPage() {
 
   useEffect(() => {
     fetchResults();
+    fetch('/api/students')
+      .then((r) => r.json())
+      .then((data) => setStudents(Array.isArray(data) ? data : []));
   }, []);
 
   const refetch = async () => {
@@ -179,9 +184,10 @@ export default function ResultsPage() {
     e.preventDefault();
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const rollNumber = fd.get('rollNumber') as string;
-    const studentName = fd.get('studentName') as string;
-    const cls = fd.get('class') as string;
+    const student = students.find((s) => s.id === selectedStudent);
+    const rollNumber = student?.username || (fd.get('rollNumber') as string);
+    const studentName = student?.name || (fd.get('studentName') as string);
+    const cls = student?.class || (fd.get('class') as string);
     const exam = fd.get('exam') as string;
     const subjects: Record<string, number> = {};
     let total = 0;
@@ -201,6 +207,7 @@ export default function ResultsPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        studentUsername: student?.username,
         rollNumber,
         studentName,
         class: cls,
@@ -212,6 +219,7 @@ export default function ResultsPage() {
     });
 
     setShowModal(false);
+    setSelectedStudent('');
     form.reset();
     await fetchResults();
   };
@@ -298,18 +306,34 @@ export default function ResultsPage() {
           <div className="bg-white rounded-xl p-6 w-full max-w-lg">
             <h2 className="text-xl font-bold mb-4">Add Result</h2>
             <form className="space-y-4" onSubmit={handleAddResult}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Student</label>
+                <select
+                  value={selectedStudent}
+                  onChange={(e) => {
+                    setSelectedStudent(e.target.value);
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  required
+                >
+                  <option value="">Choose a student...</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.username}) - Class {s.class}</option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
-                  <input name="rollNumber" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                  <input name="rollNumber" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                  <input name="studentName" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                  <input name="studentName" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                  <input name="class" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg" required />
+                  <input name="class" type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
@@ -334,7 +358,7 @@ export default function ResultsPage() {
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
                   Save Result
                 </button>
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
+                <button type="button" onClick={() => { setShowModal(false); setSelectedStudent(''); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
                   Cancel
                 </button>
               </div>
