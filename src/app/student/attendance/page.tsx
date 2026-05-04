@@ -18,7 +18,11 @@ export default function StudentAttendance() {
     if (!user) return;
     fetch(`/api/attendance?studentUsername=${user.username}`)
       .then((r) => r.json())
-      .then((data) => setRecords(Array.isArray(data) ? data : []));
+      .then((data) => {
+        const all = Array.isArray(data) ? data : [];
+        const deduped = Array.from(new Map(all.map((r: AttendanceRecord) => [r.date, r])).values());
+        setRecords(deduped);
+      });
   }, [user]);
 
   const presentCount = records.filter((r) => r.status === 'present').length;

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
-  user: { username: string; name: string; role: string } | null;
+  user: { username: string; name: string; role: string; class?: string } | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -13,7 +13,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ username: string; name: string; role: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Login failed');
 
-    const userObj = { username: data.username, name: data.name || 'Admin', role: data.role };
+    const userObj = { username: data.username, name: data.name || 'Admin', role: data.role, class: data.class || '' };
     setUser(userObj);
     localStorage.setItem('authUser', JSON.stringify(userObj));
     router.push(data.role === 'admin' ? '/admin' : '/student');

@@ -42,16 +42,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const records = Array.isArray(body) ? body : [body];
 
+    const snapshot = await db.collection('attendance').get();
+    const existing = snapshot.docs;
+
     const batch = db.batch();
+    existing.forEach((doc: any) => {
+      const data = doc.data();
+      const shouldDelete = records.some((r: any) =>
+        data.studentUsername === r.studentUsername && data.date === r.date
+      );
+      if (shouldDelete) batch.delete(doc.ref);
+    });
+
     records.forEach((record) => {
       const ref = db.collection('attendance').doc();
       batch.set(ref, { ...record, createdAt: new Date().toISOString() });
     });
     await batch.commit();
 
+    console.log('[Attendance POST] Saved', records.length, 'records');
     return NextResponse.json({ success: true, count: records.length }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to save attendance' }, { status: 500 });
+  } catch (e: any) {
+    console.error('[Attendance POST] Error:', e);
+    return NextResponse.json({ error: e.message || 'Failed to save attendance' }, { status: 500 });
   }
 }
 

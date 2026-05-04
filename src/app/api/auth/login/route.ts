@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       role: 'student',
       username: studentData.username,
       name: studentData.name,
+      class: studentData.class,
     });
   } catch (error: any) {
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });

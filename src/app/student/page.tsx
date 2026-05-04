@@ -1,41 +1,80 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
-const studentInfo = {
-  name: 'John Doe',
-  rollNumber: 'STU001',
-  class: '10-A',
-  attendance: '94%',
-  pendingFees: '$0',
-};
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  priority: string;
+  target: string;
+}
 
-const notices = [
-  { id: 1, title: 'Annual Sports Day on May 15', date: '2026-05-03', priority: 'high' },
-  { id: 2, title: 'Mid-term Exam Results Published', date: '2026-05-01', priority: 'medium' },
-  { id: 3, title: 'Library Books Due Next Week', date: '2026-04-30', priority: 'low' },
-];
-
-const recentResults = [
-  { subject: 'Mathematics', marks: '92/100', grade: 'A+' },
-  { subject: 'Science', marks: '88/100', grade: 'A' },
-  { subject: 'English', marks: '95/100', grade: 'A+' },
-];
+interface Result {
+  id: string;
+  studentUsername: string;
+  studentName: string;
+  class: string;
+  exam: string;
+  percentage: string;
+  grade: string;
+  subjects: Record<string, number>;
+  published: boolean;
+}
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [recentResults, setRecentResults] = useState<{ exam: string; percentage: string; grade: string }[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetch('/api/announcements')
+      .then((r) => r.json())
+      .then((data) => {
+        const all = Array.isArray(data) ? data : [];
+        const visible = all.filter(
+          (a: Announcement) => a.target === 'all' || a.target === 'student'
+        ).slice(0, 5);
+        setAnnouncements(visible);
+      });
+
+    fetch('/api/results')
+      .then((r) => r.json())
+      .then((data) => {
+        const all = Array.isArray(data) ? data : [];
+        const myResults = all.filter(
+          (r: Result) => r.studentUsername === user?.username && r.published
+        );
+
+        const latest = myResults
+          .filter((r, i, arr) => arr.findIndex(x => x.exam === r.exam) === i)
+          .map((r) => ({ exam: r.exam, percentage: r.percentage, grade: r.grade }))
+          .slice(0, 5);
+
+        setRecentResults(latest);
+      });
+  }, [user]);
+
+  if (!user) return null;
+
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome, {studentInfo.name}</h1>
-        <p className="text-gray-500">Roll No: {studentInfo.rollNumber} | Class: {studentInfo.class}</p>
+        <h1 className="text-3xl font-bold text-gray-800">Welcome, {user.name}</h1>
+        <p className="text-gray-500">Username: {user.username}</p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {[
-          { label: 'Attendance', value: studentInfo.attendance, color: 'bg-green-500', icon: '📋' },
-          { label: 'Pending Fees', value: studentInfo.pendingFees, color: 'bg-blue-500', icon: '💰' },
-          { label: 'Class', value: studentInfo.class, color: 'bg-purple-500', icon: '🏫' },
+          { label: 'Class', value: user.class || '-', color: 'bg-green-500' },
+          { label: 'Username', value: user.username, color: 'bg-blue-500' },
+          { label: 'Name', value: user.name, color: 'bg-purple-500' },
         ].map((stat, i) => (
           <div key={i} className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between">
@@ -43,9 +82,7 @@ export default function StudentDashboard() {
                 <p className="text-gray-500 text-sm">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-800 mt-1">{stat.value}</p>
               </div>
-              <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}>
-                {stat.icon}
-              </div>
+              <div className={`${stat.color} w-3 h-12 rounded-lg`}></div>
             </div>
           </div>
         ))}
@@ -60,14 +97,18 @@ export default function StudentDashboard() {
               View All
             </Link>
           </div>
-          <div className="space-y-3">
-            {notices.map((n) => (
-              <div key={n.id} className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium text-gray-800">{n.title}</p>
-                <p className="text-sm text-gray-500">{n.date}</p>
-              </div>
-            ))}
-          </div>
+          {announcements.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No notices yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {announcements.map((n) => (
+                <div key={n.id} className="p-3 bg-gray-50 rounded-lg">
+                  <p className="font-medium text-gray-800">{n.title}</p>
+                  <p className="text-sm text-gray-500">{n.date}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Results */}
@@ -78,19 +119,23 @@ export default function StudentDashboard() {
               View All
             </Link>
           </div>
-          <div className="space-y-3">
-            {recentResults.map((r, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="font-medium text-gray-800">{r.subject}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-600">{r.marks}</span>
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-medium">
-                    {r.grade}
-                  </span>
+          {recentResults.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No results uploaded yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentResults.map((r, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="font-medium text-gray-800">{r.exam}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-gray-600">{r.percentage}</span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-medium">
+                      {r.grade}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
