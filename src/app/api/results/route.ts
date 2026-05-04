@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const studentUsername = searchParams.get('studentUsername');
 
-    let query = db.collection('results').orderBy('createdAt', 'desc');
+    let query: any = db.collection('results');
 
     if (studentUsername) {
       query = query.where('studentUsername', '==', studentUsername);
@@ -15,8 +15,16 @@ export async function GET(req: NextRequest) {
 
     const snapshot = await query.get();
     const results = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+
+    results.sort((a: any, b: any) => {
+      const dateA = (a as any).createdAt || '';
+      const dateB = (b as any).createdAt || '';
+      return dateB.localeCompare(dateA);
+    });
+
     return NextResponse.json(results);
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[Results GET] Error:', e);
     return NextResponse.json([]);
   }
 }

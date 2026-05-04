@@ -11,6 +11,7 @@ interface Announcement {
   date: string;
   priority: string;
   target: string;
+  isActive: boolean;
 }
 
 interface Result {
@@ -37,19 +38,21 @@ export default function StudentDashboard() {
       .then((r) => r.json())
       .then((data) => {
         const all = Array.isArray(data) ? data : [];
-        const visible = all.filter(
-          (a: Announcement) => a.target === 'all' || a.target === 'student'
-        ).slice(0, 5);
+        const visible = all
+          .filter((a: Announcement) => a.isActive !== false)
+          .slice(0, 5);
         setAnnouncements(visible);
       });
 
     fetch('/api/results')
       .then((r) => r.json())
       .then((data) => {
+        console.log('[Dashboard Results] Raw:', data);
         const all = Array.isArray(data) ? data : [];
         const myResults = all.filter(
-          (r: Result) => r.studentUsername === user?.username && r.published
+          (r: Result) => r.studentUsername === user?.username && r.published === true
         );
+        console.log('[Dashboard Results] Filtered:', myResults.length);
 
         const latest = myResults
           .filter((r, i, arr) => arr.findIndex(x => x.exam === r.exam) === i)
