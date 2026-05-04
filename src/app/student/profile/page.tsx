@@ -1,17 +1,50 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+
 export default function StudentProfile() {
-  const student = {
-    name: 'John Doe',
-    rollNumber: 'STU001',
-    class: '10-A',
-    email: 'john@school.com',
-    dateOfBirth: '2008-05-15',
-    parentName: 'Mr. James Doe',
-    contactNumber: '+1 234 567 890',
-    address: '123 School Street, Education City',
-    attendance: '94%',
-  };
+  const { user } = useAuth();
+  const [student, setStudent] = useState<{
+    name: string;
+    username: string;
+    class: string;
+    dateOfBirth?: string;
+    parentName?: string;
+    contactNumber?: string;
+    address?: string;
+  } | null>(null);
+  const [attendance, setAttendance] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetch('/api/students')
+      .then((r) => r.json())
+      .then((data) => {
+        const all = Array.isArray(data) ? data : [];
+        const me = all.find((s: any) => s.username === user.username);
+        if (me) setStudent(me);
+      });
+
+    fetch(`/api/attendance?studentUsername=${user.username}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const records = Array.isArray(data) ? data : [];
+        const total = records.length;
+        const present = records.filter((r: any) => r.status === 'present').length;
+        const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+        setAttendance(pct);
+      });
+  }, [user]);
+
+  if (!user || !student) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Loading profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -25,22 +58,45 @@ export default function StudentProfile() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-800">{student.name}</h2>
-          <p className="text-gray-500 mb-6">Roll No: {student.rollNumber} | Class: {student.class}</p>
+          <p className="text-gray-500 mb-6">Username: {student.username} | Class: {student.class}</p>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {[
-              { label: 'Email', value: student.email },
-              { label: 'Date of Birth', value: student.dateOfBirth },
-              { label: 'Parent Name', value: student.parentName },
-              { label: 'Contact', value: student.contactNumber },
-              { label: 'Address', value: student.address },
-              { label: 'Attendance', value: student.attendance },
-            ].map((item, i) => (
-              <div key={i} className="border-b pb-3">
-                <p className="text-sm text-gray-500">{item.label}</p>
-                <p className="font-medium text-gray-800">{item.value}</p>
+            <div className="border-b pb-3">
+              <p className="text-sm text-gray-500">Username</p>
+              <p className="font-medium text-gray-800">{student.username}</p>
+            </div>
+            <div className="border-b pb-3">
+              <p className="text-sm text-gray-500">Class</p>
+              <p className="font-medium text-gray-800">{student.class}</p>
+            </div>
+            {student.dateOfBirth && (
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-500">Date of Birth</p>
+                <p className="font-medium text-gray-800">{student.dateOfBirth}</p>
               </div>
-            ))}
+            )}
+            {student.parentName && (
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-500">Parent Name</p>
+                <p className="font-medium text-gray-800">{student.parentName}</p>
+              </div>
+            )}
+            {student.contactNumber && (
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-500">Contact</p>
+                <p className="font-medium text-gray-800">{student.contactNumber}</p>
+              </div>
+            )}
+            {student.address && (
+              <div className="border-b pb-3">
+                <p className="text-sm text-gray-500">Address</p>
+                <p className="font-medium text-gray-800">{student.address}</p>
+              </div>
+            )}
+            <div className="border-b pb-3">
+              <p className="text-sm text-gray-500">Attendance</p>
+              <p className="font-medium text-gray-800">{attendance}%</p>
+            </div>
           </div>
         </div>
       </div>
