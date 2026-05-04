@@ -28,22 +28,22 @@ export async function POST(req: NextRequest) {
 
     if (body.replace && Array.isArray(body.records)) {
       const records = body.records;
-      const toDelete = await Promise.all(
-        records.map(async (record: any) => {
-          const snapshot = await db.collection('results')
-            .where('studentUsername', '==', record.studentUsername)
-            .where('exam', '==', record.exam)
-            .get();
-          return snapshot.docs.map((doc: any) => doc.ref);
-        })
-      );
+
+      const snapshot = await db.collection('results').orderBy('createdAt', 'desc').get();
+      const existing = snapshot.docs;
+
+      const toDelete = existing.filter((doc: any) => {
+        const data = doc.data();
+        return records.some((r: any) => data.studentUsername === r.studentUsername && data.exam === r.exam);
+      });
 
       const batch = db.batch();
-      toDelete.flat().forEach((ref: any) => batch.delete(ref));
+      toDelete.forEach((doc: any) => batch.delete(doc.ref));
       records.forEach((record: any) => {
         const ref = db.collection('results').doc();
         batch.set(ref, { ...record, createdAt: new Date().toISOString() });
       });
+
       await batch.commit();
       return NextResponse.json({ success: true, count: records.length });
     }
@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
     });
     await batch.commit();
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to save results' }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message || 'Failed to save results' }, { status: 500 });
   }
 }
 

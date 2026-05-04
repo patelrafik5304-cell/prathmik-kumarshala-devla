@@ -147,21 +147,25 @@ export default function ResultsPage() {
   const handleConfirmUpload = async () => {
     setUploadMsg('');
     setUploadSuccess('');
-    const res = await fetch('/api/results', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ records: preview, replace: true }),
-    });
-    const data = await res.json();
-    if (data.success) {
-      setUploadSuccess(`${data.count} result(s) uploaded successfully`);
-      setPreview([]);
-      setShowUploadModal(false);
-      fetch('/api/results')
-        .then((r) => r.json())
-        .then((d) => setResults(Array.isArray(d) ? d : []));
-    } else {
-      setUploadMsg(data.error || 'Upload failed');
+    try {
+      const res = await fetch('/api/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ records: preview, replace: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUploadSuccess(`${data.count} result(s) uploaded successfully`);
+        setPreview([]);
+        setShowUploadModal(false);
+        fetch('/api/results')
+          .then((r) => r.json())
+          .then((d) => setResults(Array.isArray(d) ? d : []));
+      } else {
+        setUploadMsg(data.error || 'Upload failed');
+      }
+    } catch (err: any) {
+      setUploadMsg(err.message || 'Network error');
     }
   };
 
