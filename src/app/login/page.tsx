@@ -77,9 +77,7 @@ export default function LoginPage() {
         <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8 sm:p-10">
           {/* Logo & Title */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-lg mb-4 transform transition-transform duration-300 hover:scale-105 hover:rotate-2">
-              <span className="text-white text-3xl font-bold">P</span>
-            </div>
+            <img src="/logo.jpeg" alt="Prathmik Kumarshala" className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover transform transition-transform duration-300 hover:scale-105 hover:rotate-2" />
             <h1 className="text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-amber-500 animate-gradient-text">PRATHMIK KUMARSHALA</h1>
             <p className="text-blue-600 font-medium mt-1">Management System</p>
             <p className="text-gray-500 text-sm mt-2">Sign in to your account</p>

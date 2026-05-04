@@ -73,9 +73,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center font-bold text-white text-lg">
-                P
-              </div>
+              <img src="/logo.jpeg" alt="Prathmik Kumarshala" className="w-10 h-10 rounded-xl object-cover" />
               <h2 className="font-semibold text-sm">{title}</h2>
             </div>
             <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors">
