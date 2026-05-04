@@ -17,6 +17,7 @@ export default function StudentsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showCreds, setShowCreds] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form, setForm] = useState({ name: '', class: '', contact: '' });
   const [newCreds, setNewCreds] = useState<{ username: string; password: string } | null>(null);
@@ -112,20 +113,39 @@ export default function StudentsPage() {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Login ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Password</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filtered.map((student) => (
               <tr key={student.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium">{student.username}</td>
                 <td className="px-6 py-4">{student.name}</td>
                 <td className="px-6 py-4">{student.class}</td>
                 <td className="px-6 py-4">{student.contact}</td>
+                <td className="px-6 py-4 font-mono font-medium text-indigo-600">{student.username}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">
+                      {visiblePasswords[student.id] ? student.password : '••••••••'}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setVisiblePasswords((prev) => ({
+                          ...prev,
+                          [student.id]: !prev[student.id],
+                        }))
+                      }
+                      className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    >
+                      {visiblePasswords[student.id] ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
                     <button onClick={() => handleEdit(student)} className="text-indigo-600 hover:text-indigo-800">
@@ -140,7 +160,7 @@ export default function StudentsPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No students found</td>
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No students found</td>
               </tr>
             )}
           </tbody>
