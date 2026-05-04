@@ -92,8 +92,9 @@ export default function ResultsPage() {
 
     const ext = file.name.split('.').pop()?.toLowerCase();
 
+    const reader = new FileReader();
+
     if (ext === 'csv') {
-      const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
         console.log('[Upload] CSV text length:', text.length);
@@ -101,24 +102,24 @@ export default function ResultsPage() {
       };
       reader.readAsText(file);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      const reader = new FileReader();
       reader.onload = (ev) => {
         const data = new Uint8Array(ev.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
         console.log('[Upload] Excel rows:', json.length);
+        if (json.length > 0) console.log('[Upload] First row:', json[0]);
         parseJsonRows(json);
       };
       reader.readAsArrayBuffer(file);
     } else {
       alert('Please upload a .csv or .xlsx file.');
+      return;
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const parseCSVText = (text: string) => {
+    if (fileInputRef.current) fileInputRef.current.value = '';
     const lines = text.trim().split('\n');
     if (lines.length < 2) {
       setUploadMsg('CSV file has no data rows.');
@@ -135,6 +136,7 @@ export default function ResultsPage() {
   };
 
   const parseJsonRows = (json: Record<string, unknown>[]) => {
+    if (fileInputRef.current) fileInputRef.current.value = '';
     const rows = json.map((row) => {
       const normalized: Record<string, string> = {};
       Object.keys(row).forEach((key) => {
@@ -199,18 +201,22 @@ export default function ResultsPage() {
       });
       const data = await res.json();
       console.log('[Upload] API response:', data);
-      if (data.success) {
-        setUploadSuccess(`${data.count} result(s) uploaded successfully`);
-        setShowUploadModal(false);
+      if (res.ok && data.success) {
         setPreview([]);
-        fetch('/api/results')
-          .then((r) => r.json())
-          .then((d) => {
-            console.log('[Results] Fetched:', d.length, 'results');
+        setShowUploadModal(false);
+        setTimeout(async () => {
+          try {
+            const r = await fetch('/api/results');
+            const d = await r.json();
+            console.log('[Results] Refreshed:', d.length, 'results');
             setResults(Array.isArray(d) ? d : []);
-          });
+          } catch (err) {
+            console.error('[Results] Refresh failed:', err);
+          }
+        }, 1000);
+        setUploadSuccess(`${data.count} result(s) uploaded! Table refreshing...`);
       } else {
-        setUploadMsg(data.error || 'Upload failed');
+        setUploadMsg(data.error || `Upload failed (status ${res.status})`);
       }
     } catch (err: any) {
       setUploadMsg(err.message || 'Network error');
