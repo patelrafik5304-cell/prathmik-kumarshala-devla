@@ -207,22 +207,32 @@ export default function StudentsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
-                <div className="flex items-center gap-4">
-                  {form.photo && (
-                    <img src={form.photo} alt="Preview" className="w-16 h-16 rounded-full object-cover border" />
+                <label className="flex items-center gap-3 cursor-pointer border border-gray-300 rounded-lg px-4 py-2.5 hover:bg-gray-50 transition">
+                  {form.photo ? (
+                    <img src={form.photo} alt="Preview" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
                   )}
+                  <div>
+                    <span className="text-sm text-indigo-600 font-medium">Choose Photo</span>
+                    <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                  </div>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handlePhotoUpload}
-                    className="flex-1 text-sm"
+                    className="hidden"
                   />
-                  {form.photo && (
-                    <button type="button" onClick={() => setForm({ ...form, photo: '' })} className="text-red-600 text-sm hover:underline">
-                      Remove
-                    </button>
-                  )}
-                </div>
+                </label>
+                {form.photo && (
+                  <button type="button" onClick={() => setForm({ ...form, photo: '' })} className="mt-2 text-red-600 text-sm hover:underline">
+                    Remove
+                  </button>
+                )}
               </div>
               {!editingStudent && (
                 <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
