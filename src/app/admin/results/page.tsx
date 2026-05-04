@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import * as XLSX from 'xlsx';
 
 interface Result {
   id: string;
@@ -88,60 +89,94 @@ export default function ResultsPage() {
     setUploadMsg('');
     setPreview([]);
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const lines = text.trim().split('\n');
-      if (lines.length < 2) {
-        setUploadMsg('CSV file has no data rows.');
-        return;
-      }
+    const ext = file.name.split('.').pop()?.toLowerCase();
 
-      const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-      const parsed = lines.slice(1).map((line) => {
-        const vals = line.split(',');
-        const row: Record<string, string> = {};
-        headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
-        return row;
-      }).filter((row) => row['username'] && row['student name']);
+    if (ext === 'csv') {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        parseCSVText(text);
+      };
+      reader.readAsText(file);
+    } else if (ext === 'xlsx' || ext === 'xls') {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+        parseJsonRows(json);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      alert('Please upload a .csv or .xlsx file.');
+    }
 
-      const processed = parsed.map((row) => {
-        const subjects: Record<string, number> = {};
-        let total = 0;
-        let count = 0;
-        SUBJECTS.forEach((sub) => {
-          const mark = parseFloat(row[sub.toLowerCase()] || '');
-          if (!isNaN(mark)) {
-            subjects[sub] = mark;
-            total += mark;
-            count++;
-          }
-        });
-        const maxMarks = count * 100;
-        const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-
-        return {
-          id: '',
-          studentUsername: row['username'],
-          studentName: row['student name'],
-          class: row['class'],
-          exam: row['exam'] || 'Mid-term',
-          subjects,
-          percentage: `${pct}%`,
-          grade: calculateGrade(pct),
-        };
-      });
-
-      if (processed.length === 0) {
-        setUploadMsg('No valid data found in CSV.');
-        return;
-      }
-
-      setPreview(processed);
-      setShowUploadModal(true);
-    };
-    reader.readAsText(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const parseCSVText = (text: string) => {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) {
+      setUploadMsg('CSV file has no data rows.');
+      return;
+    }
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const rows = lines.slice(1).map((line) => {
+      const vals = line.split(',');
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
+      return row;
+    }).filter((row) => row['username'] && row['student name']);
+    processRows(rows);
+  };
+
+  const parseJsonRows = (json: Record<string, unknown>[]) => {
+    const rows = json.map((row) => {
+      const normalized: Record<string, string> = {};
+      Object.keys(row).forEach((key) => {
+        normalized[key.toLowerCase().trim()] = String(row[key] ?? '');
+      });
+      return normalized;
+    }).filter((row) => row['username'] && row['student name']);
+    processRows(rows);
+  };
+
+  const processRows = (rows: Record<string, string>[]) => {
+    if (rows.length === 0) {
+      setUploadMsg('No valid data found. CSV must have columns: Username, Student Name, Class, Exam, and subject marks.');
+      return;
+    }
+
+    const processed = rows.map((row) => {
+      const subjects: Record<string, number> = {};
+      let total = 0;
+      let count = 0;
+      SUBJECTS.forEach((sub) => {
+        const mark = parseFloat(row[sub.toLowerCase()] || '');
+        if (!isNaN(mark)) {
+          subjects[sub] = mark;
+          total += mark;
+          count++;
+        }
+      });
+      const maxMarks = count * 100;
+      const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
+
+      return {
+        id: '',
+        studentUsername: row['username'],
+        studentName: row['student name'],
+        class: row['class'],
+        exam: row['exam'] || 'Mid-term',
+        subjects,
+        percentage: `${pct}%`,
+        grade: calculateGrade(pct),
+      };
+    });
+
+    setPreview(processed);
+    setShowUploadModal(true);
   };
 
   const handleConfirmUpload = async () => {
@@ -232,7 +267,7 @@ export default function ResultsPage() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             onChange={handleFileUpload}
             className="hidden"
           />
