@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Check, X as XIcon, Calendar } from 'lucide-react';
+import { Check, X as XIcon, Calendar, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
@@ -13,10 +13,26 @@ interface Student {
   class: string;
 }
 
+function getDateRange() {
+  const today = new Date();
+  const fifteenDaysAgo = new Date(today);
+  fifteenDaysAgo.setDate(today.getDate() - 15);
+  return {
+    min: fifteenDaysAgo.toISOString().split('T')[0],
+    max: today.toISOString().split('T')[0],
+  };
+}
+
+function isDateValid(dateStr: string): boolean {
+  const { min, max } = getDateRange();
+  return dateStr >= min && dateStr <= max;
+}
+
 export default function AttendancePage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedClass, setSelectedClass] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const dateRange = getDateRange();
+  const [date, setDate] = useState(dateRange.max);
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
@@ -42,6 +58,10 @@ export default function AttendancePage() {
   };
 
   const handleSubmit = async () => {
+    if (!isDateValid(date)) {
+      alert('You can only mark attendance for the last 15 days. Future dates are not allowed.');
+      return;
+    }
     setLoading(true);
     setSavedMsg('');
     const records = filteredStudents.map((student) => ({
@@ -60,13 +80,21 @@ export default function AttendancePage() {
 
   const presentCount = Object.values(attendance).filter((v) => v === 'present').length;
   const absentCount = Object.values(attendance).filter((v) => v === 'absent').length;
+  const dateValid = isDateValid(date);
 
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Attendance Management</h1>
-        <p className="text-gray-500 mt-1 text-sm">Mark and track student attendance</p>
+        <p className="text-gray-500 mt-1 text-sm">Mark and track student attendance (last 15 days only)</p>
       </div>
+
+      {!dateValid && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Selected date is outside the allowed range. Please select a date within the last 15 days.</span>
+        </div>
+      )}
 
       {savedMsg && (
         <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
@@ -80,8 +108,16 @@ export default function AttendancePage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" />
+              <input
+                type="date"
+                value={date}
+                min={dateRange.min}
+                max={dateRange.max}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+              />
             </div>
+            <p className="text-xs text-gray-400 mt-1.5">Only last 15 days allowed</p>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
@@ -96,7 +132,7 @@ export default function AttendancePage() {
             </div>
           </div>
           <div className="flex items-end">
-            <Button onClick={handleSubmit} loading={loading} className="w-full">
+            <Button onClick={handleSubmit} loading={loading} disabled={!dateValid || filteredStudents.length === 0} className="w-full">
               <Check className="w-4 h-4" /> Save Attendance
             </Button>
           </div>
