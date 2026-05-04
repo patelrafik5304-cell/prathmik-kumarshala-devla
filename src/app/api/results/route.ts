@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 
+const BATCH_LIMIT = 400;
+
 export async function GET(req: NextRequest) {
   try {
     const db = getAdminDb();
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (e: any) {
     console.error('[Results GET] Error:', e);
-    return NextResponse.json([]);
+    return NextResponse.json({ error: e.message || 'Failed to fetch results' }, { status: 500 });
   }
 }
 
@@ -35,11 +37,11 @@ export async function POST(req: NextRequest) {
   try {
     const db = getAdminDb();
     const body = await req.json();
+    console.log('[Results POST] Body keys:', Object.keys(body));
 
     if (body.replace && Array.isArray(body.records)) {
       const records = body.records;
       console.log('[Results] Replace upload:', records.length, 'records');
-      console.log('[Results] First record:', JSON.stringify(records[0]));
 
       const snapshot = await db.collection('results').orderBy('createdAt', 'desc').get();
       const existing = snapshot.docs;
@@ -51,16 +53,51 @@ export async function POST(req: NextRequest) {
 
       console.log('[Results] Docs to delete:', toDelete.length);
 
-      const batch = db.batch();
-      toDelete.forEach((doc: any) => batch.delete(doc.ref));
-      records.forEach((record: any) => {
-        const { id, ...rest } = record;
-        const ref = db.collection('results').doc();
-        batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
-      });
+      const totalOps = toDelete.length + records.length;
+      console.log('[Results] Total batch operations:', totalOps);
 
-      await batch.commit();
-      console.log('[Results] Replace batch committed');
+      if (totalOps > BATCH_LIMIT) {
+        console.log('[Results] Splitting into batches...');
+        let opCount = 0;
+        let batch = db.batch();
+
+        toDelete.forEach((doc: any) => {
+          batch.delete(doc.ref);
+          opCount++;
+          if (opCount >= BATCH_LIMIT) {
+            await batch.commit();
+            opCount = 0;
+            batch = db.batch();
+          }
+        });
+
+        records.forEach((record: any) => {
+          const { id, ...rest } = record;
+          const ref = db.collection('results').doc();
+          batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
+          opCount++;
+          if (opCount >= BATCH_LIMIT) {
+            batch.commit();
+            opCount = 0;
+            batch = db.batch();
+          }
+        });
+
+        if (opCount > 0) {
+          await batch.commit();
+        }
+      } else {
+        const batch = db.batch();
+        toDelete.forEach((doc: any) => batch.delete(doc.ref));
+        records.forEach((record: any) => {
+          const { id, ...rest } = record;
+          const ref = db.collection('results').doc();
+          batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
+        });
+        await batch.commit();
+      }
+
+      console.log('[Results] Replace batch committed successfully');
       return NextResponse.json({ success: true, count: records.length });
     }
 
@@ -84,7 +121,7 @@ export async function PUT(req: NextRequest) {
     const db = getAdminDb();
     const body = await req.json();
     const { id, ...data } = body;
-    console.log('[Results PUT] id:', id, 'data:', JSON.stringify(data));
+    console.log('[Results PUT] id:', id, 'data keys:', Object.keys(data));
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     const docRef = db.collection('results').doc(id);
     const doc = await docRef.get();

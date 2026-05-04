@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Plus, Download, FileText, Check, X, Edit2, Eye, EyeOff } from 'lucide-react';
+import { Upload, Plus, Download, FileText, Check, X, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
@@ -39,12 +39,15 @@ export default function ResultsPage() {
   const [filterClass, setFilterClass] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [resultToDelete, setResultToDelete] = useState<Result | null>(null);
   const [preview, setPreview] = useState<Result[]>([]);
   const [uploadMsg, setUploadMsg] = useState('');
   const [uploadSuccess, setUploadSuccess] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingResult, setEditingResult] = useState<Result | null>(null);
   const [editSubjects, setEditSubjects] = useState<Record<string, number>>({});
+  const [actionLoading, setActionLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -119,29 +122,51 @@ export default function ResultsPage() {
   const handleConfirmUpload = async () => {
     setUploadMsg('');
     setUploadSuccess('');
-    if (preview.length === 0) { setUploadMsg('No results to upload.'); return; }
+    setActionLoading(true);
+    if (preview.length === 0) { setUploadMsg('No results to upload.'); setActionLoading(false); return; }
     try {
       const res = await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: preview, replace: true }) });
       const data = await res.json();
       if (res.ok && data.success) {
         setPreview([]);
         setShowUploadModal(false);
-        setTimeout(async () => { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); }, 1000);
+        const r = await fetch('/api/results');
+        const d = await r.json();
+        setResults(Array.isArray(d) ? d : []);
         setUploadSuccess(`${data.count} result(s) uploaded!`);
       } else { setUploadMsg(data.error || `Upload failed (status ${res.status})`); }
     } catch (err: any) { setUploadMsg(err.message || 'Network error'); }
+    setActionLoading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (res.ok) { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); } else { alert('Delete failed: ' + (data.error || 'Unknown error')); }
+  const handleDelete = async () => {
+    if (!resultToDelete) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch(`/api/results?id=${resultToDelete.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        setResults((prev) => prev.filter((r) => r.id !== resultToDelete.id));
+        setShowDeleteModal(false);
+        setResultToDelete(null);
+      } else { alert('Delete failed: ' + (data.error || 'Unknown error')); }
+    } catch (err: any) { alert('Delete failed: ' + err.message); }
+    setActionLoading(false);
+  };
+
+  const openDeleteModal = (result: Result) => {
+    setResultToDelete(result);
+    setShowDeleteModal(true);
   };
 
   const handleTogglePublish = async (id: string, current: boolean) => {
-    const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, published: !current }) });
-    const data = await res.json();
-    if (res.ok) { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); } else { alert('Publish failed: ' + (data.error || 'Unknown error')); }
+    try {
+      const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, published: !current }) });
+      const data = await res.json();
+      if (res.ok) {
+        setResults((prev) => prev.map((r) => r.id === id ? { ...r, published: !current } : r));
+      } else { alert('Publish failed: ' + (data.error || 'Unknown error')); }
+    } catch (err: any) { alert('Publish failed: ' + err.message); }
   };
 
   const openEdit = (result: Result) => { setEditingResult(result); setEditSubjects({ ...result.subjects }); setShowEditModal(true); };
@@ -149,6 +174,7 @@ export default function ResultsPage() {
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingResult) return;
+    setActionLoading(true);
     const form = e.currentTarget;
     const fd = new FormData(form);
     const subjects: Record<string, number> = {};
@@ -156,12 +182,23 @@ export default function ResultsPage() {
     SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-    const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: fd.get('exam') || editingResult.exam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
-    if (res.ok) { setShowEditModal(false); setEditingResult(null); fetch('/api/results').then((r) => r.json()).then((d) => setResults(Array.isArray(d) ? d : [])); }
+    try {
+      const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: fd.get('exam') || editingResult.exam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
+      const data = await res.json();
+      if (res.ok) {
+        setShowEditModal(false);
+        setEditingResult(null);
+        const r = await fetch('/api/results');
+        const d = await r.json();
+        setResults(Array.isArray(d) ? d : []);
+      } else { alert('Edit failed: ' + (data.error || 'Unknown error')); }
+    } catch (err: any) { alert('Edit failed: ' + err.message); }
+    setActionLoading(false);
   };
 
   const handleAddResult = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setActionLoading(true);
     const form = e.currentTarget;
     const fd = new FormData(form);
     const student = students.find((s) => s.id === selectedStudent);
@@ -170,11 +207,16 @@ export default function ResultsPage() {
     SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-    await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentUsername: student?.username, studentName: student?.name, class: student?.class, exam: fd.get('exam'), subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
-    setShowAddModal(false);
-    setSelectedStudent('');
-    form.reset();
-    fetch('/api/results').then((r) => r.json()).then((d) => setResults(Array.isArray(d) ? d : []));
+    try {
+      await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentUsername: student?.username, studentName: student?.name, class: student?.class, exam: fd.get('exam'), subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
+      setShowAddModal(false);
+      setSelectedStudent('');
+      form.reset();
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    } catch (err: any) { alert('Add failed: ' + err.message); }
+    setActionLoading(false);
   };
 
   return (
@@ -228,7 +270,7 @@ export default function ResultsPage() {
                     <div className="flex flex-wrap gap-1">
                       <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => openEdit(result)}><Edit2 className="w-3 h-3" /></Button>
                       <Button variant="ghost" className={`px-2 py-1 text-xs ${result.published ? 'text-orange-600' : 'text-green-600'}`} onClick={() => handleTogglePublish(result.id, result.published)}>{result.published ? 'Unpublish' : 'Publish'}</Button>
-                      <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(result.id)}>Delete</Button>
+                      <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(result)}><Trash2 className="w-3 h-3" /></Button>
                     </div>
                   </td>
                 </tr>
@@ -266,7 +308,7 @@ export default function ResultsPage() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
             {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
           </div>
-          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">Save Result</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }}>Cancel</Button></div>
+          <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Result</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }}>Cancel</Button></div>
         </form>
       </Modal>
 
@@ -286,7 +328,7 @@ export default function ResultsPage() {
           </div>
         )}
         {uploadMsg && (<div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm">{uploadMsg}</div>)}
-        <div className="flex gap-3"><Button onClick={handleConfirmUpload} className="flex-1">Upload {preview.length} Result(s)</Button><Button variant="secondary" className="flex-1" onClick={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }}>Cancel</Button></div>
+        <div className="flex gap-3"><Button onClick={handleConfirmUpload} loading={actionLoading} className="flex-1">Upload {preview.length} Result(s)</Button><Button variant="secondary" className="flex-1" onClick={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }}>Cancel</Button></div>
       </Modal>
 
       {/* Edit Modal */}
@@ -302,9 +344,26 @@ export default function ResultsPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
               {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" defaultValue={editingResult.subjects[sub] ?? ''} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
             </div>
-            <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">Save Changes</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingResult(null); }}>Cancel</Button></div>
+            <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Changes</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingResult(null); }}>Cancel</Button></div>
           </form>
         )}
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirm Delete">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete the result for</p>
+          <p className="font-semibold text-gray-800 mb-2">{resultToDelete?.studentName}</p>
+          <p className="text-sm text-gray-500 mb-2">{resultToDelete?.exam} Exam — {resultToDelete?.percentage} ({resultToDelete?.grade})</p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={actionLoading} onClick={handleDelete}>Yes, Delete</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
