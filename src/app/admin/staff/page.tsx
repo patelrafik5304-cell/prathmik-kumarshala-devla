@@ -13,6 +13,7 @@ export default function StaffPage() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', designation: '', photo: '' });
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,14 +39,29 @@ export default function StaffPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/staff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
+    if (editingStaff) {
+      await fetch('/api/staff', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingStaff.id, ...form }),
+      });
+      setEditingStaff(null);
+    } else {
+      await fetch('/api/staff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+    }
     setShowModal(false);
     setForm({ name: '', designation: '', photo: '' });
     refetch();
+  };
+
+  const handleEdit = (member: StaffMember) => {
+    setEditingStaff(member);
+    setForm({ name: member.name, designation: member.designation, photo: member.photo || '' });
+    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -63,7 +79,7 @@ export default function StaffPage() {
           <p className="text-gray-500">Manage teaching and non-teaching staff</p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => { setEditingStaff(null); setForm({ name: '', designation: '', photo: '' }); setShowModal(true); }}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
         >
           + Add Staff
@@ -86,7 +102,7 @@ export default function StaffPage() {
                 <td className="px-6 py-4">{s.designation}</td>
                 <td className="px-6 py-4">
                   <div className="flex gap-2">
-                    <button className="text-indigo-600 hover:text-indigo-800">Edit</button>
+                    <button onClick={() => handleEdit(s)} className="text-indigo-600 hover:text-indigo-800">Edit</button>
                     <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:text-red-800">
                       Delete
                     </button>
@@ -101,7 +117,7 @@ export default function StaffPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Add Staff</h2>
+            <h2 className="text-xl font-bold mb-4">{editingStaff ? 'Edit Staff' : 'Add Staff'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -154,7 +170,7 @@ export default function StaffPage() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-                  Add
+                  {editingStaff ? 'Update' : 'Add'}
                 </button>
                 <button
                   type="button"
