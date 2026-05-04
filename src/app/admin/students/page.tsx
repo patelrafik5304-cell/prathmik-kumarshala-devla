@@ -218,7 +218,6 @@ export default function StudentsPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Child UID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
@@ -230,7 +229,6 @@ export default function StudentsPage() {
             <tbody className="divide-y divide-gray-100">
               {filtered.map((student) => (
                 <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-4 font-mono text-sm text-gray-600">{student.studentId || '-'}</td>
                   <td className="px-4 py-4 font-mono text-sm text-purple-600 font-medium">{student.childUid}</td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -267,7 +265,7 @@ export default function StudentsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">No students found</td></tr>
+                <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No students found</td></tr>
               )}
             </tbody>
           </table>
@@ -342,7 +340,7 @@ export default function StudentsPage() {
               <FileSpreadsheet className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-blue-800">CSV Format Required</p>
-                <p className="text-xs text-blue-600 mt-1">Your CSV must have headers: <code className="bg-blue-100 px-1 rounded">Name, CHILDUID, Class</code></p>
+                <p className="text-xs text-blue-600 mt-1">Your CSV must have headers: <code className="bg-blue-100 px-1 rounded">name,childuid,class</code></p>
               </div>
             </div>
           </div>
