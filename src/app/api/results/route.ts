@@ -74,10 +74,13 @@ export async function PUT(req: NextRequest) {
     const db = getAdminDb();
     const body = await req.json();
     const { id, ...data } = body;
+    console.log('[Results PUT] id:', id, 'data:', JSON.stringify(data));
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
     await db.collection('results').doc(id).update(data);
+    console.log('[Results PUT] Success');
     return NextResponse.json({ success: true });
   } catch (e: any) {
+    console.error('[Results PUT] Error:', e);
     return NextResponse.json({ error: e.message || 'Failed to update' }, { status: 500 });
   }
 }

@@ -250,24 +250,34 @@ export default function ResultsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    console.log('[Delete] Attempting to delete:', id);
     const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    console.log('[Delete] Response:', res.status, data);
     if (res.ok) {
-      fetch('/api/results')
-        .then((r) => r.json())
-        .then((d) => setResults(Array.isArray(d) ? d : []));
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    } else {
+      alert('Delete failed: ' + (data.error || 'Unknown error'));
     }
   };
 
   const handleTogglePublish = async (id: string, current: boolean) => {
+    console.log('[Publish] Toggling:', id, 'from', current);
     const res = await fetch('/api/results', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, published: !current }),
     });
+    const data = await res.json();
+    console.log('[Publish] Response:', res.status, data);
     if (res.ok) {
-      fetch('/api/results')
-        .then((r) => r.json())
-        .then((d) => setResults(Array.isArray(d) ? d : []));
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    } else {
+      alert('Publish failed: ' + (data.error || 'Unknown error'));
     }
   };
 
