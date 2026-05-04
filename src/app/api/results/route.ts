@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         let opCount = 0;
         let batch = db.batch();
 
-        toDelete.forEach((doc: any) => {
+        for (const doc of toDelete) {
           batch.delete(doc.ref);
           opCount++;
           if (opCount >= BATCH_LIMIT) {
@@ -69,19 +69,19 @@ export async function POST(req: NextRequest) {
             opCount = 0;
             batch = db.batch();
           }
-        });
+        }
 
-        records.forEach((record: any) => {
+        for (const record of records) {
           const { id, ...rest } = record;
           const ref = db.collection('results').doc();
           batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
           opCount++;
           if (opCount >= BATCH_LIMIT) {
-            batch.commit();
+            await batch.commit();
             opCount = 0;
             batch = db.batch();
           }
-        });
+        }
 
         if (opCount > 0) {
           await batch.commit();
