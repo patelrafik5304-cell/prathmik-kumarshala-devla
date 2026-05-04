@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
 
     if (body.replace && Array.isArray(body.records)) {
       const records = body.records;
+      console.log('[Results] Replace upload:', records.length, 'records');
+      console.log('[Results] First record:', JSON.stringify(records[0]));
 
       const snapshot = await db.collection('results').orderBy('createdAt', 'desc').get();
       const existing = snapshot.docs;
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
         return records.some((r: any) => data.studentUsername === r.studentUsername && data.exam === r.exam);
       });
 
+      console.log('[Results] Docs to delete:', toDelete.length);
+
       const batch = db.batch();
       toDelete.forEach((doc: any) => batch.delete(doc.ref));
       records.forEach((record: any) => {
@@ -45,6 +49,7 @@ export async function POST(req: NextRequest) {
       });
 
       await batch.commit();
+      console.log('[Results] Replace batch committed');
       return NextResponse.json({ success: true, count: records.length });
     }
 
@@ -57,6 +62,7 @@ export async function POST(req: NextRequest) {
     await batch.commit();
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });
   } catch (e: any) {
+    console.error('[Results] Error:', e);
     return NextResponse.json({ error: e.message || 'Failed to save results' }, { status: 500 });
   }
 }

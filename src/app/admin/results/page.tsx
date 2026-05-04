@@ -86,6 +86,7 @@ export default function ResultsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('[Upload] File:', file.name, 'Size:', file.size);
     setUploadMsg('');
     setPreview([]);
 
@@ -95,6 +96,7 @@ export default function ResultsPage() {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
+        console.log('[Upload] CSV text length:', text.length);
         parseCSVText(text);
       };
       reader.readAsText(file);
@@ -105,6 +107,7 @@ export default function ResultsPage() {
         const workbook = XLSX.read(data, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+        console.log('[Upload] Excel rows:', json.length);
         parseJsonRows(json);
       };
       reader.readAsArrayBuffer(file);
@@ -143,6 +146,8 @@ export default function ResultsPage() {
   };
 
   const processRows = (rows: Record<string, string>[]) => {
+    console.log('[Upload] Process rows count:', rows.length);
+    console.log('[Upload] First row:', rows[0]);
     if (rows.length === 0) {
       setUploadMsg('No valid data found. CSV must have columns: Username, Student Name, Class, Exam, and subject marks.');
       return;
@@ -182,6 +187,10 @@ export default function ResultsPage() {
   const handleConfirmUpload = async () => {
     setUploadMsg('');
     setUploadSuccess('');
+    if (preview.length === 0) {
+      setUploadMsg('No results to upload.');
+      return;
+    }
     try {
       const res = await fetch('/api/results', {
         method: 'POST',
@@ -189,13 +198,17 @@ export default function ResultsPage() {
         body: JSON.stringify({ records: preview, replace: true }),
       });
       const data = await res.json();
+      console.log('[Upload] API response:', data);
       if (data.success) {
         setUploadSuccess(`${data.count} result(s) uploaded successfully`);
-        setPreview([]);
         setShowUploadModal(false);
+        setPreview([]);
         fetch('/api/results')
           .then((r) => r.json())
-          .then((d) => setResults(Array.isArray(d) ? d : []));
+          .then((d) => {
+            console.log('[Results] Fetched:', d.length, 'results');
+            setResults(Array.isArray(d) ? d : []);
+          });
       } else {
         setUploadMsg(data.error || 'Upload failed');
       }
@@ -275,7 +288,7 @@ export default function ResultsPage() {
             onClick={() => fileInputRef.current?.click()}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
-            Upload CSV
+            Upload Results
           </button>
           <button
             onClick={() => setShowAddModal(true)}
