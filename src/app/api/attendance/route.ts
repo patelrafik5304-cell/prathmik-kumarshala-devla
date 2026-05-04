@@ -8,7 +8,9 @@ export async function GET(req: NextRequest) {
     const studentUsername = searchParams.get('studentUsername');
     const date = searchParams.get('date');
 
-    let query: any = db.collection('attendance').orderBy('date', 'desc');
+    console.log('[Attendance GET] studentUsername:', studentUsername, 'date:', date);
+
+    let query: any = db.collection('attendance');
 
     if (studentUsername) {
       query = query.where('studentUsername', '==', studentUsername);
@@ -19,8 +21,17 @@ export async function GET(req: NextRequest) {
 
     const snapshot = await query.get();
     const records = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+
+    console.log('[Attendance GET] Found:', records.length, 'records');
+    if (records.length > 0) {
+      console.log('[Attendance GET] First record:', JSON.stringify(records[0]));
+    }
+
+    records.sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''));
+
     return NextResponse.json(records);
-  } catch (e) {
+  } catch (e: any) {
+    console.error('[Attendance GET] Error:', e);
     return NextResponse.json([]);
   }
 }
