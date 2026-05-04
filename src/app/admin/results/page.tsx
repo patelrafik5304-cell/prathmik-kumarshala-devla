@@ -179,6 +179,7 @@ export default function ResultsPage() {
 
   return (
     <div>
+      <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Results Management</h1>
@@ -186,7 +187,6 @@ export default function ResultsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={downloadCSV}><Download className="w-4 h-4" /> Generate CSV</Button>
-          <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="absolute opacity-0 w-0 h-0 overflow-hidden" />
           <Button variant="secondary" onClick={() => fileInputRef.current?.click()}><Upload className="w-4 h-4" /> Upload Results</Button>
           <Button variant="primary" onClick={() => setShowAddModal(true)}><Plus className="w-4 h-4" /> Add Result</Button>
         </div>
