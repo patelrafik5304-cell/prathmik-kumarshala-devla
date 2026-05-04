@@ -112,17 +112,26 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
     const doc = await db.collection('students').doc(id).get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
     const email = doc.data()?.email;
     if (email) {
       try {
         const user = await auth.getUserByEmail(email);
         await auth.deleteUser(user.uid);
-      } catch {}
+      } catch (e: any) {
+        console.log('[Students DELETE] Auth delete skipped:', e.message);
+      }
     }
+
     await db.collection('students').doc(id).delete();
     return NextResponse.json({ success: true });
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  } catch (e: any) {
+    console.error('[Students DELETE] Error:', e);
+    return NextResponse.json({ error: e.message || 'Failed to delete' }, { status: 500 });
   }
 }
