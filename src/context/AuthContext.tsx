@@ -18,10 +18,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem('authUser');
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
     setLoading(false);
   }, []);
 

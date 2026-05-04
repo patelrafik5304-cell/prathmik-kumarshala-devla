@@ -11,12 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
-  const { user, login } = useAuth();
-
-  if (user) {
-    router.push(user.role === 'admin' ? '/admin' : '/student');
-    return null;
-  }
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
