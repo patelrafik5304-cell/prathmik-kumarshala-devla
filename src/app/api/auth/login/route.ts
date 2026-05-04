@@ -10,17 +10,17 @@ export async function POST(request: NextRequest) {
 
     // In production, use Firebase Admin SDK to verify
     // For now, return success with demo credentials
-    if (email === 'admin@school.com' && password === 'admin123') {
+    if ((email === 'admin@school.com' || email === 'admin') && password === 'admin123') {
       return NextResponse.json({
         success: true,
         role: 'admin',
-        user: { email, name: 'Admin User', role: 'admin' },
+        user: { email: 'admin@school.com', name: 'Admin User', role: 'admin' },
       });
-    } else if (email === 'student@school.com' && password === 'student123') {
+    } else if ((email === 'student@school.com' || email === 'student') && password === 'student123') {
       return NextResponse.json({
         success: true,
         role: 'student',
-        user: { email, name: 'John Doe', role: 'student' },
+        user: { email: 'student@school.com', name: 'John Doe', role: 'student' },
       });
     }
 

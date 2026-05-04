@@ -18,16 +18,18 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, role, logout } = useAuth();
+  const { user, demoUser, role, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (!user) router.push('/login');
-    else if (role !== 'admin') router.push('/student');
-  }, [user, role, router]);
+  const isLoggedIn = user || demoUser;
 
-  if (!user || role !== 'admin') return null;
+  useEffect(() => {
+    if (!isLoggedIn) router.push('/login');
+    else if (role !== 'admin') router.push('/student');
+  }, [isLoggedIn, role, router]);
+
+  if (!isLoggedIn || role !== 'admin') return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
