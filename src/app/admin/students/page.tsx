@@ -32,6 +32,8 @@ export default function StudentsPage() {
   const [showModal, setShowModal] = useState(false);
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [showCreds, setShowCreds] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [form, setForm] = useState({ name: '', childUid: '', class: '', photo: '' });
@@ -88,11 +90,17 @@ export default function StudentsPage() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this student?')) {
-      await fetch(`/api/students?id=${id}`, { method: 'DELETE' });
-      setStudents(students.filter((s) => s.id !== id));
-    }
+  const handleDelete = async () => {
+    if (!studentToDelete) return;
+    await fetch(`/api/students?id=${studentToDelete.id}`, { method: 'DELETE' });
+    setStudents(students.filter((s) => s.id !== studentToDelete.id));
+    setShowDeleteModal(false);
+    setStudentToDelete(null);
+  };
+
+  const openDeleteModal = (student: Student) => {
+    setStudentToDelete(student);
+    setShowDeleteModal(true);
   };
 
   const parseCsv = (text: string): CsvRow[] => {
@@ -272,7 +280,7 @@ export default function StudentsPage() {
                   <td className="px-4 py-4">
                     <div className="flex gap-2">
                       <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(student)}>Edit</Button>
-                      <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(student.id)}>Delete</Button>
+                      <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(student)}>Delete</Button>
                     </div>
                   </td>
                 </tr>
@@ -418,6 +426,23 @@ export default function StudentsPage() {
               {csvLoading ? 'Importing...' : 'Import All'}
             </Button>
             <Button variant="secondary" className="flex-1" onClick={() => setShowCsvModal(false)}>Close</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Confirm Delete">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete</p>
+          <p className="font-semibold text-gray-800 mb-6">{studentToDelete?.name}?</p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>Yes</Button>
           </div>
         </div>
       </Modal>
