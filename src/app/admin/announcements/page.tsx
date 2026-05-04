@@ -15,6 +15,7 @@ export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', priority: 'medium' });
+  const [editingItem, setEditingItem] = useState<Announcement | null>(null);
 
   useEffect(() => {
     fetch('/api/announcements')
@@ -30,18 +31,33 @@ export default function AnnouncementsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetch('/api/announcements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        date: new Date().toISOString().split('T')[0],
-        isActive: true,
-      }),
-    });
+    if (editingItem) {
+      await fetch('/api/announcements', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingItem.id, ...form }),
+      });
+      setEditingItem(null);
+    } else {
+      await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          date: new Date().toISOString().split('T')[0],
+          isActive: true,
+        }),
+      });
+    }
     setShowModal(false);
     setForm({ title: '', content: '', priority: 'medium' });
     refetch();
+  };
+
+  const handleEdit = (item: Announcement) => {
+    setEditingItem(item);
+    setForm({ title: item.title, content: item.content, priority: item.priority });
+    setShowModal(true);
   };
 
   const toggleActive = async (item: Announcement) => {
@@ -107,7 +123,7 @@ export default function AnnouncementsPage() {
                 >
                   {a.isActive ? 'Deactivate' : 'Activate'}
                 </button>
-                <button className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
+                <button onClick={() => handleEdit(a)} className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
                 <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800 text-sm">
                   Delete
                 </button>
@@ -120,7 +136,7 @@ export default function AnnouncementsPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">New Announcement</h2>
+            <h2 className="text-xl font-bold mb-4">{editingItem ? 'Edit Announcement' : 'New Announcement'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -156,7 +172,7 @@ export default function AnnouncementsPage() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-                  Publish
+                  {editingItem ? 'Update' : 'Publish'}
                 </button>
                 <button
                   type="button"

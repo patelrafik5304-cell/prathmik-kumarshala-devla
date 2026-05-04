@@ -39,14 +39,19 @@ export default function GalleryPage() {
       formData.append('image', imageFile);
     }
 
-    await fetch('/api/gallery', {
+    const res = await fetch('/api/gallery', {
       method: 'POST',
       body: formData,
     });
-    setShowModal(false);
-    setForm({ title: '', category: 'Events', description: '' });
-    setImageFile(null);
-    refetch();
+    const data = await res.json();
+    if (res.ok) {
+      setShowModal(false);
+      setForm({ title: '', category: 'Events', description: '' });
+      setImageFile(null);
+      refetch();
+    } else {
+      alert('Upload failed: ' + (data.error || 'Unknown error'));
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -145,7 +150,7 @@ export default function GalleryPage() {
                     </svg>
                   </div>
                   <div>
-                    <span className="text-sm text-indigo-600 font-medium">Choose Image</span>
+                    <span className="text-sm text-indigo-600 font-medium">{imageFile ? imageFile.name : 'Choose Image'}</span>
                     <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
                   </div>
                   <input
@@ -155,6 +160,11 @@ export default function GalleryPage() {
                     className="hidden"
                   />
                 </label>
+                {imageFile && (
+                  <button type="button" onClick={() => setImageFile(null)} className="mt-2 text-red-600 text-sm hover:underline">
+                    Remove
+                  </button>
+                )}
               </div>
               <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
