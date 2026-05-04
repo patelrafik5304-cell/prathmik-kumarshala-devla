@@ -1,6 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
+import { Check, X as XIcon, Calendar } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
 
 interface Student {
   id: string;
@@ -18,29 +22,18 @@ export default function AttendancePage() {
   const [savedMsg, setSavedMsg] = useState('');
 
   useEffect(() => {
-    fetch('/api/students')
-      .then((r) => r.json())
-      .then((data) => {
-        setStudents(Array.isArray(data) ? data : []);
-        if (data.length > 0 && !selectedClass) {
-          setSelectedClass(data[0].class);
-        }
-      });
+    fetch('/api/students').then((r) => r.json()).then((data) => {
+      setStudents(Array.isArray(data) ? data : []);
+      if (data.length > 0 && !selectedClass) { setSelectedClass(data[0].class); }
+    });
   }, []);
 
-  const classes = [...new Set(students.map((s) => s.class))].sort((a, b) => {
-    const numA = parseInt(a) || 0;
-    const numB = parseInt(b) || 0;
-    return numA - numB;
-  });
-
+  const classes = [...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
   const filteredStudents = students.filter((s) => s.class === selectedClass);
 
   useEffect(() => {
     const initial: Record<string, string> = {};
-    filteredStudents.forEach((s) => {
-      initial[s.id] = '';
-    });
+    filteredStudents.forEach((s) => { initial[s.id] = ''; });
     setAttendance(initial);
   }, [selectedClass, filteredStudents.length]);
 
@@ -51,7 +44,6 @@ export default function AttendancePage() {
   const handleSubmit = async () => {
     setLoading(true);
     setSavedMsg('');
-
     const records = filteredStudents.map((student) => ({
       studentId: student.id,
       studentUsername: student.username,
@@ -60,13 +52,7 @@ export default function AttendancePage() {
       date,
       status: attendance[student.id] || 'absent',
     }));
-
-    await fetch('/api/attendance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(records),
-    });
-
+    await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
     setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
     setLoading(false);
     setTimeout(() => setSavedMsg(''), 3000);
@@ -77,119 +63,86 @@ export default function AttendancePage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Attendance Management</h1>
-      <p className="text-gray-500 mb-8">Mark and track student attendance</p>
+      <div className="mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Attendance Management</h1>
+        <p className="text-gray-500 mt-1 text-sm">Mark and track student attendance</p>
+      </div>
 
       {savedMsg && (
-        <div className="bg-green-50 text-green-700 p-3 rounded-lg mb-4 text-sm">{savedMsg}</div>
+        <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
+          <Check className="w-4 h-4" /> {savedMsg}
+        </div>
       )}
 
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <div className="grid md:grid-cols-3 gap-4">
+      <Card className="p-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Date</label>
+            <div className="relative">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" />
+            </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-            <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              {classes.map((c) => (
-                <option key={c} value={c}>Class {c}</option>
-              ))}
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Class</label>
+            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
+              {classes.map((c) => (<option key={c} value={c}>Class {c}</option>))}
             </select>
           </div>
           <div className="flex items-end">
-            <div className="flex gap-4 text-sm">
-              <span className="text-green-600">Present: {presentCount}</span>
-              <span className="text-red-600">Absent: {absentCount}</span>
+            <div className="flex gap-3">
+              <Badge variant="success">Present: {presentCount}</Badge>
+              <Badge variant="danger">Absent: {absentCount}</Badge>
             </div>
           </div>
+          <div className="flex items-end">
+            <Button onClick={handleSubmit} loading={loading} className="w-full">
+              <Check className="w-4 h-4" /> Save Attendance
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredStudents.map((student) => (
-              <tr key={student.id}>
-                <td className="px-6 py-4 font-mono text-indigo-600">{student.username}</td>
-                <td className="px-6 py-4">{student.name}</td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      attendance[student.id] === 'present'
-                        ? 'bg-green-100 text-green-700'
-                        : attendance[student.id] === 'absent'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {attendance[student.id] || 'Not marked'}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleAttendance(student.id, 'present')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        attendance[student.id] === 'present'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
-                      }`}
-                    >
-                      Present
-                    </button>
-                    <button
-                      onClick={() => handleAttendance(student.id, 'absent')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        attendance[student.id] === 'absent'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-red-100 text-red-700 hover:bg-red-200'
-                      }`}
-                    >
-                      Absent
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filteredStudents.length === 0 && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                  No students in this class
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-6">
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : 'Save Attendance'}
-        </button>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredStudents.map((student) => (
+                <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4 font-mono text-sm text-primary">{student.username}</td>
+                  <td className="px-6 py-4 font-medium text-gray-800">{student.name}</td>
+                  <td className="px-6 py-4">
+                    <Badge variant={attendance[student.id] === 'present' ? 'success' : attendance[student.id] === 'absent' ? 'danger' : 'default'}>
+                      {attendance[student.id] || 'Not marked'}
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      <button onClick={() => handleAttendance(student.id, 'present')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'present' ? 'bg-green-600 text-white shadow-lg shadow-green-500/25' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                        Present
+                      </button>
+                      <button onClick={() => handleAttendance(student.id, 'absent')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'absent' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+                        Absent
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredStudents.length === 0 && (
+                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">No students in this class</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

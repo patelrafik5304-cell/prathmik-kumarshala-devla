@@ -1,25 +1,18 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
-
-interface GalleryItem {
-  _id: string;
-  title: string;
-  category: string;
-  description: string;
-  imageUrl: string;
-  date: string;
-}
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import EmptyState from '@/components/ui/EmptyState';
+import { Image as ImageIcon, X } from 'lucide-react';
 
 export default function StudentGallery() {
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [galleryItems, setGalleryItems] = useState<{ _id: string; title: string; category: string; description: string; imageUrl: string; date: string }[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ title: string; description: string; category: string; date: string; imageUrl: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/gallery')
-      .then((r) => r.json())
-      .then((data) => setGalleryItems(Array.isArray(data) ? data : []));
+    fetch('/api/gallery').then((r) => r.json()).then((data) => setGalleryItems(Array.isArray(data) ? data : []));
   }, []);
 
   const categories = ['All', ...Array.from(new Set(galleryItems.map((g) => g.category)))];
@@ -27,65 +20,57 @@ export default function StudentGallery() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">School Gallery</h1>
-      <p className="text-gray-500 mb-8">Explore school memories and events</p>
-
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-              selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
+      <div className="mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">School Gallery</h1>
+        <p className="text-gray-500 mt-1 text-sm">Explore school memories and events</p>
       </div>
 
+      {galleryItems.length > 0 && (
+        <Card className="p-4 mb-6">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
+              <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedCategory === cat ? 'bg-primary text-white shadow-lg' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{cat}</button>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">
-          <p className="text-lg">No images in the gallery yet.</p>
-        </div>
+        <EmptyState icon={<ImageIcon className="w-8 h-8" />} title="No images in the gallery yet" />
       ) : (
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((item) => (
-            <div
-              key={item._id}
-              className="bg-white rounded-xl shadow overflow-hidden hover:shadow-lg transition cursor-pointer"
-              onClick={() => setSelectedImage(item)}
-            >
-              <div className="h-48 overflow-hidden">
+            <Card key={item._id} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedImage(item)}>
+              <div className="h-48 overflow-hidden relative">
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
-                  <div className="h-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center">
-                    <span className="text-white text-4xl">Gallery</span>
-                  </div>
+                  <div className="h-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center"><ImageIcon className="w-12 h-12 text-white/50" /></div>
                 )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-800">{item.title}</h3>
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs">{item.category}</span>
+                  <h3 className="font-semibold text-gray-800 text-sm truncate">{item.title}</h3>
+                  <Badge variant="info">{item.category}</Badge>
                 </div>
-                <p className="text-sm text-gray-600">{item.description}</p>
-                <p className="text-xs text-gray-400 mt-2">{item.date}</p>
+                <p className="text-sm text-gray-500 truncate">{item.description}</p>
+                <p className="text-xs text-gray-400 mt-1">{item.date}</p>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       {selectedImage && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-4 right-4 text-white hover:text-gray-300"><X className="w-8 h-8" /></button>
           <div className="max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full max-h-[80vh] object-contain rounded-xl shadow-2xl" />
+            <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full max-h-[80vh] object-contain rounded-t-xl animate-scale-in" />
             <div className="bg-white rounded-b-xl p-4 -mt-1">
               <h3 className="font-semibold text-gray-800">{selectedImage.title}</h3>
-              <p className="text-sm text-gray-600">{selectedImage.description}</p>
-              <p className="text-xs text-gray-400 mt-1">{selectedImage.date} · {selectedImage.category}</p>
+              <p className="text-sm text-gray-600 mt-1">{selectedImage.description}</p>
+              <p className="text-xs text-gray-400 mt-2">{selectedImage.date} · {selectedImage.category}</p>
             </div>
           </div>
         </div>

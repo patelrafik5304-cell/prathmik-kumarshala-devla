@@ -1,25 +1,17 @@
-'use client';
+﻿'use client';
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-
-const navItems = [
-  { name: 'Dashboard', href: '/student' },
-  { name: 'My Profile', href: '/student/profile' },
-  { name: 'Attendance', href: '/student/attendance' },
-  { name: 'Results', href: '/student/results' },
-  { name: 'Staff', href: '/student/staff' },
-  { name: 'Notices', href: '/student/notices' },
-  { name: 'Gallery', href: '/student/gallery' },
-];
+import Sidebar from '@/components/ui/Sidebar';
+import TopBar from '@/components/ui/TopBar';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isLoggedIn = user;
 
@@ -30,39 +22,23 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
   if (!isLoggedIn || user.role === 'admin') return null;
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-indigo-700 text-white fixed h-full overflow-y-auto">
-        <div className="p-6 border-b border-indigo-600">
-          <h2 className="text-xl font-bold">Student Portal</h2>
-          <p className="text-indigo-200 text-sm">Prathmik Kumarshala</p>
-        </div>
-        <nav className="p-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                pathname === item.href ? 'bg-indigo-800' : 'hover:bg-indigo-600'
-              }`}
-            >
-              <span>{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-        <div className="absolute bottom-0 w-full p-4 border-t border-indigo-600">
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-600 transition"
-          >
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+  const pageTitle = pathname === '/student' ? 'Dashboard' :
+    pathname === '/student/profile' ? 'My Profile' :
+    pathname === '/student/attendance' ? 'Attendance' :
+    pathname === '/student/results' ? 'Results' :
+    pathname === '/student/staff' ? 'Staff' :
+    pathname === '/student/notices' ? 'Notices' :
+    pathname === '/student/gallery' ? 'Gallery' : 'Dashboard';
 
-      {/* Main Content */}
-      <main className="ml-64 flex-1 p-8">{children}</main>
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <Sidebar role="student" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <TopBar title={pageTitle} onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <main className="lg:ml-[280px] pt-16 p-4 lg:p-8">
+        <div className="animate-slide-up">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

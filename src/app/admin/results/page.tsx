@@ -1,7 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { Upload, Plus, Download, FileText, Check, X, Edit2, Eye, EyeOff } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import Badge from '@/components/ui/Badge';
+import Card from '@/components/ui/Card';
 import * as XLSX from 'xlsx';
 
 interface Result {
@@ -29,7 +33,6 @@ function calculateGrade(pct: number): string {
 }
 
 export default function ResultsPage() {
-  const { user } = useAuth();
   const [results, setResults] = useState<Result[]>([]);
   const [students, setStudents] = useState<{ id: string; username: string; name: string; class: string }[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
@@ -45,37 +48,18 @@ export default function ResultsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch('/api/results')
-      .then((r) => r.json())
-      .then((data) => setResults(Array.isArray(data) ? data : []));
-    fetch('/api/students')
-      .then((r) => r.json())
-      .then((data) => setStudents(Array.isArray(data) ? data : []));
+    fetch('/api/results').then((r) => r.json()).then((data) => setResults(Array.isArray(data) ? data : []));
+    fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
   }, []);
 
-  const classes = ['all', ...[...new Set(students.map((s) => s.class))].sort((a, b) => {
-    const numA = parseInt(a) || 0;
-    const numB = parseInt(b) || 0;
-    return numA - numB;
-  })];
-
+  const classes = ['all', ...[...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0))];
   const filtered = filterClass === 'all' ? results : results.filter((r) => r.class === filterClass);
 
   const downloadCSV = () => {
     const classStudents = filterClass === 'all' ? students : students.filter((s) => s.class === filterClass);
-
-    if (classStudents.length === 0) {
-      alert('No students found for the selected class.');
-      return;
-    }
-
+    if (classStudents.length === 0) { alert('No students found for the selected class.'); return; }
     const header = ['Username', 'Name', 'Class', 'Exam', ...SUBJECTS].join(',');
-    const rows = classStudents.map((s) => {
-      const vals = [s.username, s.name, s.class, 'Mid-term'];
-      SUBJECTS.forEach(() => vals.push(''));
-      return vals.join(',');
-    });
-
+    const rows = classStudents.map((s) => { const vals = [s.username, s.name, s.class, 'Mid-term']; SUBJECTS.forEach(() => vals.push('')); return vals.join(','); });
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -89,125 +73,45 @@ export default function ResultsPage() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    console.log('[Upload] File:', file.name, 'Size:', file.size);
     setUploadMsg('');
     setPreview([]);
-
     const ext = file.name.split('.').pop()?.toLowerCase();
-
     const reader = new FileReader();
-
     if (ext === 'csv') {
-      reader.onload = (ev) => {
-        const text = ev.target?.result as string;
-        console.log('[Upload] CSV text length:', text.length);
-        parseCSVText(text);
-      };
+      reader.onload = (ev) => { const text = ev.target?.result as string; parseCSVText(text); };
       reader.readAsText(file);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      reader.onload = (ev) => {
-        const data = new Uint8Array(ev.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
-        console.log('[Upload] Excel rows:', json.length);
-        if (json.length > 0) console.log('[Upload] First row:', json[0]);
-        parseJsonRows(json);
-      };
+      reader.onload = (ev) => { const data = new Uint8Array(ev.target?.result as ArrayBuffer); const workbook = XLSX.read(data, { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet); parseJsonRows(json); };
       reader.readAsArrayBuffer(file);
-    } else {
-      alert('Please upload a .csv or .xlsx file.');
-      return;
-    }
+    } else { alert('Please upload a .csv or .xlsx file.'); return; }
   };
 
   const parseCSVText = (text: string) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
-    console.log('[Upload] Raw CSV text:', text);
     const lines = text.trim().split('\n');
-    if (lines.length < 2) {
-      setUploadMsg('CSV file has no data rows.');
-      return;
-    }
+    if (lines.length < 2) { setUploadMsg('CSV file has no data rows.'); return; }
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    console.log('[Upload] CSV headers:', headers);
-    console.log('[Upload] CSV first data row:', lines[1]);
-    const rawRows = lines.slice(1).map((line) => {
-      const vals = line.split(',');
-      const row: Record<string, string> = {};
-      headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
-      if (row['name']) {
-        row['student name'] = row['name'];
-      } else if (row['student']) {
-        row['student name'] = row['student'];
-      }
-      return row;
-    });
-    console.log('[Upload] Raw rows:', rawRows);
-    const rows = rawRows.filter((row) => {
-      const hasUsername = !!row['username'];
-      const hasName = !!row['student name'];
-      if (!hasUsername || !hasName) {
-        console.log('[Upload] Row rejected — username:', row['username'], '| student name:', row['student name']);
-      }
-      return hasUsername && hasName;
-    });
+    const rawRows = lines.slice(1).map((line) => { const vals = line.split(','); const row: Record<string, string> = {}; headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; }); if (row['name']) row['student name'] = row['name']; else if (row['student']) row['student name'] = row['student']; return row; });
+    const rows = rawRows.filter((row) => !!row['username'] && !!row['student name']);
     processRows(rows);
   };
 
   const parseJsonRows = (json: Record<string, unknown>[]) => {
     if (fileInputRef.current) fileInputRef.current.value = '';
-    const rows = json.map((row) => {
-      const normalized: Record<string, string> = {};
-      Object.keys(row).forEach((key) => {
-        const k = key.toLowerCase().trim();
-        normalized[k] = String(row[key] ?? '');
-      });
-      if (normalized['student'] && !normalized['student name']) {
-        normalized['student name'] = normalized['student'];
-      }
-      return normalized;
-    }).filter((row) => row['username'] && row['student name']);
+    const rows = json.map((row) => { const normalized: Record<string, string> = {}; Object.keys(row).forEach((key) => { const k = key.toLowerCase().trim(); normalized[k] = String(row[key] ?? ''); }); if (normalized['student'] && !normalized['student name']) normalized['student name'] = normalized['student']; return normalized; }).filter((row) => row['username'] && row['student name']);
     processRows(rows);
   };
 
   const processRows = (rows: Record<string, string>[]) => {
-    console.log('[Upload] Process rows count:', rows.length);
-    console.log('[Upload] First row:', rows[0]);
-    if (rows.length === 0) {
-      setUploadMsg('No valid data found. CSV must have columns: Username, Student Name, Class, Exam, and subject marks.');
-      return;
-    }
-
+    if (rows.length === 0) { setUploadMsg('No valid data found.'); return; }
     const processed = rows.map((row) => {
       const subjects: Record<string, number> = {};
-      let total = 0;
-      let count = 0;
-      SUBJECTS.forEach((sub) => {
-        const mark = parseFloat(row[sub.toLowerCase()] || '');
-        if (!isNaN(mark)) {
-          subjects[sub] = mark;
-          total += mark;
-          count++;
-        }
-      });
+      let total = 0; let count = 0;
+      SUBJECTS.forEach((sub) => { const mark = parseFloat(row[sub.toLowerCase()] || ''); if (!isNaN(mark)) { subjects[sub] = mark; total += mark; count++; } });
       const maxMarks = count * 100;
       const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-
-      return {
-        id: '',
-        studentUsername: row['username'],
-        studentName: row['student name'],
-        class: row['class'],
-        exam: row['exam'] || 'Mid-term',
-        subjects,
-        percentage: `${pct}%`,
-        grade: calculateGrade(pct),
-        published: false,
-      };
+      return { id: '', studentUsername: row['username'], studentName: row['student name'], class: row['class'], exam: row['exam'] || 'Mid-term', subjects, percentage: `${pct}%`, grade: calculateGrade(pct), published: false };
     });
-
     setPreview(processed);
     setShowUploadModal(true);
   };
@@ -215,77 +119,32 @@ export default function ResultsPage() {
   const handleConfirmUpload = async () => {
     setUploadMsg('');
     setUploadSuccess('');
-    if (preview.length === 0) {
-      setUploadMsg('No results to upload.');
-      return;
-    }
+    if (preview.length === 0) { setUploadMsg('No results to upload.'); return; }
     try {
-      const res = await fetch('/api/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ records: preview, replace: true }),
-      });
+      const res = await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: preview, replace: true }) });
       const data = await res.json();
-      console.log('[Upload] API response:', data);
       if (res.ok && data.success) {
         setPreview([]);
         setShowUploadModal(false);
-        setTimeout(async () => {
-          try {
-            const r = await fetch('/api/results');
-            const d = await r.json();
-            console.log('[Results] Refreshed:', d.length, 'results');
-            setResults(Array.isArray(d) ? d : []);
-          } catch (err) {
-            console.error('[Results] Refresh failed:', err);
-          }
-        }, 1000);
-        setUploadSuccess(`${data.count} result(s) uploaded! Table refreshing...`);
-      } else {
-        setUploadMsg(data.error || `Upload failed (status ${res.status})`);
-      }
-    } catch (err: any) {
-      setUploadMsg(err.message || 'Network error');
-    }
+        setTimeout(async () => { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); }, 1000);
+        setUploadSuccess(`${data.count} result(s) uploaded!`);
+      } else { setUploadMsg(data.error || `Upload failed (status ${res.status})`); }
+    } catch (err: any) { setUploadMsg(err.message || 'Network error'); }
   };
 
   const handleDelete = async (id: string) => {
-    console.log('[Delete] Attempting to delete:', id);
     const res = await fetch(`/api/results?id=${id}`, { method: 'DELETE' });
     const data = await res.json();
-    console.log('[Delete] Response:', res.status, data);
-    if (res.ok) {
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
-    } else {
-      alert('Delete failed: ' + (data.error || 'Unknown error'));
-    }
+    if (res.ok) { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); } else { alert('Delete failed: ' + (data.error || 'Unknown error')); }
   };
 
   const handleTogglePublish = async (id: string, current: boolean) => {
-    console.log('[Publish] Toggling:', id, 'from', current);
-    const res = await fetch('/api/results', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, published: !current }),
-    });
+    const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, published: !current }) });
     const data = await res.json();
-    console.log('[Publish] Response:', res.status, data);
-    if (res.ok) {
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
-    } else {
-      alert('Publish failed: ' + (data.error || 'Unknown error'));
-    }
+    if (res.ok) { const r = await fetch('/api/results'); const d = await r.json(); setResults(Array.isArray(d) ? d : []); } else { alert('Publish failed: ' + (data.error || 'Unknown error')); }
   };
 
-  const openEdit = (result: Result) => {
-    setEditingResult(result);
-    setEditSubjects({ ...result.subjects });
-    setShowEditModal(true);
-  };
+  const openEdit = (result: Result) => { setEditingResult(result); setEditSubjects({ ...result.subjects }); setShowEditModal(true); };
 
   const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -293,37 +152,12 @@ export default function ResultsPage() {
     const form = e.currentTarget;
     const fd = new FormData(form);
     const subjects: Record<string, number> = {};
-    let total = 0;
-    let count = 0;
-    SUBJECTS.forEach((sub) => {
-      const val = parseInt(fd.get(sub) as string);
-      if (!isNaN(val)) {
-        subjects[sub] = val;
-        total += val;
-        count++;
-      }
-    });
+    let total = 0; let count = 0;
+    SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-
-    const res = await fetch('/api/results', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: editingResult.id,
-        exam: fd.get('exam') || editingResult.exam,
-        subjects,
-        percentage: `${pct}%`,
-        grade: calculateGrade(pct),
-      }),
-    });
-    if (res.ok) {
-      setShowEditModal(false);
-      setEditingResult(null);
-      fetch('/api/results')
-        .then((r) => r.json())
-        .then((d) => setResults(Array.isArray(d) ? d : []));
-    }
+    const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: fd.get('exam') || editingResult.exam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
+    if (res.ok) { setShowEditModal(false); setEditingResult(null); fetch('/api/results').then((r) => r.json()).then((d) => setResults(Array.isArray(d) ? d : [])); }
   };
 
   const handleAddResult = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -332,327 +166,146 @@ export default function ResultsPage() {
     const fd = new FormData(form);
     const student = students.find((s) => s.id === selectedStudent);
     const subjects: Record<string, number> = {};
-    let total = 0;
-    let count = 0;
-    SUBJECTS.forEach((sub) => {
-      const val = parseInt(fd.get(sub) as string);
-      if (!isNaN(val)) {
-        subjects[sub] = val;
-        total += val;
-        count++;
-      }
-    });
+    let total = 0; let count = 0;
+    SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-
-    await fetch('/api/results', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        studentUsername: student?.username,
-        studentName: student?.name,
-        class: student?.class,
-        exam: fd.get('exam'),
-        subjects,
-        percentage: `${pct}%`,
-        grade: calculateGrade(pct),
-      }),
-    });
-
+    await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentUsername: student?.username, studentName: student?.name, class: student?.class, exam: fd.get('exam'), subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
     setShowAddModal(false);
     setSelectedStudent('');
     form.reset();
-    fetch('/api/results')
-      .then((r) => r.json())
-      .then((d) => setResults(Array.isArray(d) ? d : []));
+    fetch('/api/results').then((r) => r.json()).then((d) => setResults(Array.isArray(d) ? d : []));
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Results Management</h1>
-          <p className="text-gray-500">Upload and manage student results</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Results Management</h1>
+          <p className="text-gray-500 mt-1 text-sm">Upload and manage student results</p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={downloadCSV}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Generate CSV
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileUpload}
-            className="absolute opacity-0 w-0 h-0 overflow-hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m0 0l3 3" />
-            </svg>
-            Upload Results
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-          >
-            + Add Result
-          </button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={downloadCSV}><Download className="w-4 h-4" /> Generate CSV</Button>
+          <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="absolute opacity-0 w-0 h-0 overflow-hidden" />
+          <Button variant="secondary" onClick={() => fileInputRef.current?.click()}><Upload className="w-4 h-4" /> Upload Results</Button>
+          <Button variant="primary" onClick={() => setShowAddModal(true)}><Plus className="w-4 h-4" /> Add Result</Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Class</label>
-        <select
-          value={filterClass}
-          onChange={(e) => setFilterClass(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-        >
-          {classes.map((c) => (
-            <option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${c}`}</option>
-          ))}
+      <Card className="p-4 mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Class</label>
+        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
+          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${c}`}</option>))}
         </select>
-      </div>
+      </Card>
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filtered.map((result) => (
-              <tr key={result.id} className="hover:bg-gray-50">
-                <td className="px-4 py-4 font-mono text-indigo-600">{result.studentUsername}</td>
-                <td className="px-4 py-4">{result.studentName}</td>
-                <td className="px-4 py-4">{result.class}</td>
-                <td className="px-4 py-4">{result.exam}</td>
-                <td className="px-4 py-4 font-medium">{result.percentage}</td>
-                <td className="px-4 py-4">
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm font-medium">
-                    {result.grade}
-                  </span>
-                </td>
-                <td className="px-4 py-4">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${result.published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {result.published ? 'Published' : 'Unpublished'}
-                  </span>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex gap-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-sm" onClick={() => openEdit(result)}>Edit</button>
-                    <button className={`text-sm ${result.published ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'}`} onClick={() => handleTogglePublish(result.id, result.published)}>
-                      {result.published ? 'Unpublish' : 'Publish'}
-                    </button>
-                    <button className="text-red-600 hover:text-red-800 text-sm" onClick={() => handleDelete(result.id)}>Delete</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No results found</td>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((result) => (
+                <tr key={result.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-4 py-4 font-mono text-sm text-primary">{result.studentUsername}</td>
+                  <td className="px-4 py-4 font-medium text-gray-800">{result.studentName}</td>
+                  <td className="px-4 py-4 text-gray-600">{result.class}</td>
+                  <td className="px-4 py-4 text-gray-600">{result.exam}</td>
+                  <td className="px-4 py-4 font-semibold">{result.percentage}</td>
+                  <td className="px-4 py-4"><Badge variant={result.grade === 'A' || result.grade === 'A+' ? 'success' : result.grade === 'B' || result.grade === 'B+' ? 'info' : result.grade === 'C' ? 'warning' : 'danger'}>{result.grade}</Badge></td>
+                  <td className="px-4 py-4"><Badge variant={result.published ? 'success' : 'warning'}>{result.published ? 'Published' : 'Unpublished'}</Badge></td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => openEdit(result)}><Edit2 className="w-3 h-3" /></Button>
+                      <Button variant="ghost" className={`px-2 py-1 text-xs ${result.published ? 'text-orange-600' : 'text-green-600'}`} onClick={() => handleTogglePublish(result.id, result.published)}>{result.published ? 'Unpublish' : 'Publish'}</Button>
+                      <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(result.id)}>Delete</Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (<tr><td colSpan={8} className="px-4 py-12 text-center text-gray-500">No results found</td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {uploadSuccess && (
-        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg">
-          {uploadSuccess}
-          <button onClick={() => setUploadSuccess('')} className="ml-4 underline">Dismiss</button>
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg animate-slide-up flex items-center gap-3">
+          <Check className="w-4 h-4" /> {uploadSuccess}
+          <button onClick={() => setUploadSuccess('')} className="underline text-sm">Dismiss</button>
         </div>
       )}
 
       {/* Add Result Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Add Result</h2>
-            <form className="space-y-4" onSubmit={handleAddResult}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Student</label>
-                <select
-                  value={selectedStudent}
-                  onChange={(e) => setSelectedStudent(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                >
-                  <option value="">Choose a student...</option>
-                  {students.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} ({s.username}) - Class {s.class}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
-                  <select name="exam" className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                    <option>Mid-term</option>
-                    <option>Final</option>
-                    <option>Unit Test</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subjects (Marks)</label>
-                {SUBJECTS.map((sub) => (
-                  <div key={sub} className="flex items-center gap-3 mb-2">
-                    <span className="w-20 text-sm">{sub}</span>
-                    <input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-1 border border-gray-300 rounded" />
-                    <span className="text-sm text-gray-500">/100</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-                  Save Result
-                </button>
-                <button type="button" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
-                  Cancel
-                </button>
-              </div>
-            </form>
+      <Modal open={showAddModal} onClose={() => { setShowAddModal(false); setSelectedStudent(''); }} title="Add Result">
+        <form className="space-y-4" onSubmit={handleAddResult}>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
+            <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white" required>
+              <option value="">Choose a student...</option>
+              {students.map((s) => (<option key={s.id} value={s.id}>{s.name} ({s.username}) - Class {s.class}</option>))}
+            </select>
           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Username</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly /></div>
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Student Name</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly /></div>
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Class</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly /></div>
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select name="exam" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
+            {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
+          </div>
+          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">Save Result</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }}>Cancel</Button></div>
+        </form>
+      </Modal>
 
       {/* Upload Preview Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-3xl">
-            <h2 className="text-xl font-bold mb-2">Preview Upload</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {preview.length} result(s) will be added. Existing results for same student + exam will be replaced.
-            </p>
-
-            {preview.length > 0 && (
-              <div className="max-h-64 overflow-y-auto mb-4 border rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exam</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {preview.map((r, i) => (
-                      <tr key={i}>
-                        <td className="px-3 py-2 font-mono text-indigo-600">{r.studentUsername}</td>
-                        <td className="px-3 py-2">{r.studentName}</td>
-                        <td className="px-3 py-2">{r.class}</td>
-                        <td className="px-3 py-2">{r.exam}</td>
-                        <td className="px-3 py-2">{r.percentage}</td>
-                        <td className="px-3 py-2">
-                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-medium">
-                            {r.grade}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {uploadMsg && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm">{uploadMsg}</div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={handleConfirmUpload}
-                className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
-              >
-                Upload {preview.length} Result(s)
-              </button>
-              <button
-                onClick={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }}
-                className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
+      <Modal open={showUploadModal} onClose={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }} title="Preview Upload">
+        <p className="text-sm text-gray-500 mb-4">{preview.length} result(s) will be added. Existing results for same student + exam will be replaced.</p>
+        {preview.length > 0 && (
+          <div className="max-h-64 overflow-y-auto mb-4 border rounded-xl">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Username</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Class</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Exam</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">%</th><th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Grade</th></tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {preview.map((r, i) => (<tr key={i}><td className="px-3 py-2 font-mono text-sm text-primary">{r.studentUsername}</td><td className="px-3 py-2">{r.studentName}</td><td className="px-3 py-2">{r.class}</td><td className="px-3 py-2">{r.exam}</td><td className="px-3 py-2">{r.percentage}</td><td className="px-3 py-2"><Badge variant="info">{r.grade}</Badge></td></tr>))}
+              </tbody>
+            </table>
           </div>
-        </div>
-      )}
+        )}
+        {uploadMsg && (<div className="bg-red-50 text-red-600 p-3 rounded-xl mb-4 text-sm">{uploadMsg}</div>)}
+        <div className="flex gap-3"><Button onClick={handleConfirmUpload} className="flex-1">Upload {preview.length} Result(s)</Button><Button variant="secondary" className="flex-1" onClick={() => { setShowUploadModal(false); setPreview([]); setUploadMsg(''); }}>Cancel</Button></div>
+      </Modal>
 
       {/* Edit Modal */}
-      {showEditModal && editingResult && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-4">Edit Result — {editingResult.studentName}</h2>
-            <form className="space-y-4" onSubmit={handleSaveEdit}>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={editingResult.studentUsername} readOnly />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
-                  <input type="text" className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50" value={editingResult.class} readOnly />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Type</label>
-                <select name="exam" defaultValue={editingResult.exam} className="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                  <option>Mid-term</option>
-                  <option>Final</option>
-                  <option>Unit Test</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subjects (Marks)</label>
-                {SUBJECTS.map((sub) => (
-                  <div key={sub} className="flex items-center gap-3 mb-2">
-                    <span className="w-20 text-sm">{sub}</span>
-                    <input name={sub} type="number" min="0" max="100" defaultValue={editingResult.subjects[sub] ?? ''} className="flex-1 px-3 py-1 border border-gray-300 rounded" />
-                    <span className="text-sm text-gray-500">/100</span>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-                  Save Changes
-                </button>
-                <button type="button" onClick={() => { setShowEditModal(false); setEditingResult(null); }} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal open={showEditModal} onClose={() => { setShowEditModal(false); setEditingResult(null); }} title={`Edit Result — ${editingResult?.studentName}`}>
+        {editingResult && (
+          <form className="space-y-4" onSubmit={handleSaveEdit}>
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Username</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={editingResult.studentUsername} readOnly /></div>
+              <div><label className="block text-sm font-semibold text-gray-700 mb-2">Class</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={editingResult.class} readOnly /></div>
+            </div>
+            <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select name="exam" defaultValue={editingResult.exam} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
+              {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" defaultValue={editingResult.subjects[sub] ?? ''} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
+            </div>
+            <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">Save Changes</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingResult(null); }}>Cancel</Button></div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

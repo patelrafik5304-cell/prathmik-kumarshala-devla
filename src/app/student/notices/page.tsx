@@ -1,57 +1,40 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
-
-interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  priority: string;
-  isActive: boolean;
-  date: string;
-}
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
+import EmptyState from '@/components/ui/EmptyState';
+import { Bell } from 'lucide-react';
 
 export default function StudentNotices() {
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const [notices, setNotices] = useState<{ id: string; title: string; content: string; priority: string; isActive: boolean; date: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/announcements')
-      .then((r) => r.json())
-      .then((data) => setNotices(Array.isArray(data) ? data.filter((n: Notice) => n.isActive) : []));
+    fetch('/api/announcements').then((r) => r.json()).then((data) => setNotices(Array.isArray(data) ? data.filter((n: any) => n.isActive) : []));
   }, []);
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">School Notices</h1>
-      <p className="text-gray-500 mb-8">Stay updated with school announcements</p>
+      <div className="mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">School Notices</h1>
+        <p className="text-gray-500 mt-1 text-sm">Stay updated with school announcements</p>
+      </div>
 
       {notices.length === 0 ? (
-        <div className="bg-white rounded-xl shadow p-12 text-center text-gray-500">No notices available.</div>
+        <EmptyState icon={<Bell className="w-8 h-8" />} title="No notices available" description="Check back later for updates" />
       ) : (
         <div className="space-y-4">
           {notices.map((n) => (
-            <div key={n.id} className="bg-white rounded-xl shadow p-6">
-              <div className="flex items-start justify-between mb-3">
+            <Card key={n.id} className="p-6">
+              <div className="flex items-start justify-between mb-3 gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">{n.title}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-sm text-gray-500">{n.date}</span>
-                  </div>
+                  <p className="text-sm text-gray-500 mt-1">{n.date}</p>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    n.priority === 'high'
-                      ? 'bg-red-100 text-red-700'
-                      : n.priority === 'medium'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-green-100 text-green-700'
-                  }`}
-                >
-                  {n.priority}
-                </span>
+                <Badge variant={n.priority === 'high' ? 'danger' : n.priority === 'medium' ? 'warning' : 'success'}>{n.priority}</Badge>
               </div>
-              <p className="text-gray-600">{n.content}</p>
-            </div>
+              <p className="text-gray-600 text-sm leading-relaxed">{n.content}</p>
+            </Card>
           ))}
         </div>
       )}

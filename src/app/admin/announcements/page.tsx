@@ -1,6 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
+import { Plus, Megaphone } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import Card from '@/components/ui/Card';
+import Badge from '@/components/ui/Badge';
 
 interface Announcement {
   id: string;
@@ -18,36 +23,18 @@ export default function AnnouncementsPage() {
   const [editingItem, setEditingItem] = useState<Announcement | null>(null);
 
   useEffect(() => {
-    fetch('/api/announcements')
-      .then((r) => r.json())
-      .then((data) => setAnnouncements(data));
+    fetch('/api/announcements').then((r) => r.json()).then((data) => setAnnouncements(data));
   }, []);
 
-  const refetch = () => {
-    fetch('/api/announcements')
-      .then((r) => r.json())
-      .then((data) => setAnnouncements(data));
-  };
+  const refetch = () => { fetch('/api/announcements').then((r) => r.json()).then((data) => setAnnouncements(data)); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingItem) {
-      await fetch('/api/announcements', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingItem.id, ...form }),
-      });
+      await fetch('/api/announcements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingItem.id, ...form }) });
       setEditingItem(null);
     } else {
-      await fetch('/api/announcements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          date: new Date().toISOString().split('T')[0],
-          isActive: true,
-        }),
-      });
+      await fetch('/api/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, date: new Date().toISOString().split('T')[0], isActive: true }) });
     }
     setShowModal(false);
     setForm({ title: '', content: '', priority: 'medium' });
@@ -61,11 +48,7 @@ export default function AnnouncementsPage() {
   };
 
   const toggleActive = async (item: Announcement) => {
-    await fetch('/api/announcements', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id, isActive: !item.isActive }),
-    });
+    await fetch('/api/announcements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, isActive: !item.isActive }) });
     setAnnouncements(announcements.map((a) => (a.id === item.id ? { ...a, isActive: !a.isActive } : a)));
   };
 
@@ -76,116 +59,52 @@ export default function AnnouncementsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Announcements</h1>
-          <p className="text-gray-500">Manage school notices and announcements</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Announcements</h1>
+          <p className="text-gray-500 mt-1 text-sm">Manage school notices and announcements</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
-        >
-          + New Announcement
-        </button>
+        <Button variant="primary" onClick={() => setShowModal(true)}><Plus className="w-4 h-4" /> New Announcement</Button>
       </div>
 
       <div className="space-y-4">
         {announcements.map((a) => (
-          <div key={a.id} className="bg-white rounded-xl shadow p-6">
-            <div className="flex justify-between items-start">
+          <Card key={a.id} className="p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      a.priority === 'high'
-                        ? 'bg-red-100 text-red-700'
-                        : a.priority === 'medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {a.priority}
-                  </span>
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  <Badge variant={a.priority === 'high' ? 'danger' : a.priority === 'medium' ? 'warning' : 'success'}>{a.priority}</Badge>
                   <span className="text-sm text-gray-500">{a.date}</span>
-                  {!a.isActive && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">Inactive</span>
-                  )}
+                  {!a.isActive && (<Badge variant="default">Inactive</Badge>)}
                 </div>
                 <h3 className="text-lg font-semibold text-gray-800">{a.title}</h3>
-                <p className="text-gray-600 mt-1">{a.content}</p>
+                <p className="text-gray-600 mt-1 text-sm">{a.content}</p>
               </div>
-              <div className="flex gap-2 ml-4">
-                <button
-                  onClick={() => toggleActive(a)}
-                  className={`px-3 py-1 rounded text-sm ${
-                    a.isActive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                  }`}
-                >
-                  {a.isActive ? 'Deactivate' : 'Activate'}
-                </button>
-                <button onClick={() => handleEdit(a)} className="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
-                <button onClick={() => handleDelete(a.id)} className="text-red-600 hover:text-red-800 text-sm">
-                  Delete
-                </button>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button variant="ghost" className={`px-3 py-1.5 text-sm ${a.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`} onClick={() => toggleActive(a)}>{a.isActive ? 'Deactivate' : 'Activate'}</Button>
+                <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(a)}>Edit</Button>
+                <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(a.id)}>Delete</Button>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
+        {announcements.length === 0 && (
+          <Card className="p-12 text-center">
+            <Megaphone className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No announcements yet</p>
+            <p className="text-gray-400 text-sm mt-1">Create your first announcement to get started</p>
+          </Card>
+        )}
       </div>
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">{editingItem ? 'Edit Announcement' : 'New Announcement'}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                <textarea
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  rows={3}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                <select
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">
-                  {editingItem ? 'Update' : 'Publish'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium' }); }} title={editingItem ? 'Edit Announcement' : 'New Announcement'}>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div><label className="block text-sm font-semibold text-gray-700 mb-2">Title</label><input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" required /></div>
+          <div><label className="block text-sm font-semibold text-gray-700 mb-2">Content</label><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" rows={3} required /></div>
+          <div><label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label><select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as any })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">{editingItem ? 'Update' : 'Publish'}</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium' }); }}>Cancel</Button></div>
+        </form>
+      </Modal>
     </div>
   );
 }

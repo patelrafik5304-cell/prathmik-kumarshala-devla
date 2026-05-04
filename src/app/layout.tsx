@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+﻿import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "Prathmik Kumarshala - School Management System",
@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={poppins.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
