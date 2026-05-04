@@ -22,7 +22,9 @@ export async function GET(req: NextRequest) {
       return dateB.localeCompare(dateA);
     });
 
-    return NextResponse.json(results);
+    return NextResponse.json(results, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (e: any) {
     console.error('[Results GET] Error:', e);
     return NextResponse.json([]);

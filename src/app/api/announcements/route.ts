@@ -11,7 +11,9 @@ export async function GET() {
       const dateB = b.createdAt || b.date || '';
       return dateB.localeCompare(dateA);
     });
-    return NextResponse.json(items);
+    return NextResponse.json(items, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (e: any) {
     console.error('[Announcements GET] Error:', e);
     return NextResponse.json([]);

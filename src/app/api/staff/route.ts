@@ -4,10 +4,18 @@ import { getAdminDb } from '@/lib/firebase-admin';
 export async function GET() {
   try {
     const db = getAdminDb();
-    const snapshot = await db.collection('staff').orderBy('createdAt', 'desc').get();
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(items);
-  } catch (e) {
+    const snapshot = await db.collection('staff').get();
+    const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    items.sort((a: any, b: any) => {
+      const dateA = (a as any).createdAt || '';
+      const dateB = (b as any).createdAt || '';
+      return dateB.localeCompare(dateA);
+    });
+    return NextResponse.json(items, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
+  } catch (e: any) {
+    console.error('[Staff GET] Error:', e);
     return NextResponse.json([]);
   }
 }

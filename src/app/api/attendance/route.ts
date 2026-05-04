@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
 
     records.sort((a: any, b: any) => (b.date || '').localeCompare(a.date || ''));
 
-    return NextResponse.json(records);
+    return NextResponse.json(records, {
+      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' },
+    });
   } catch (e: any) {
     console.error('[Attendance GET] Error:', e);
     return NextResponse.json([]);

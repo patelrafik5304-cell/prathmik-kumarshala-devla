@@ -25,7 +25,9 @@ export async function GET() {
       const dateB = (b as any).createdAt || '';
       return dateB.localeCompare(dateA);
     });
-    return NextResponse.json(students);
+    return NextResponse.json(students, {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (e: any) {
     console.error('[Students GET] Error:', e);
     return NextResponse.json([]);
