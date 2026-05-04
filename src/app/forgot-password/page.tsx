@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         {submitted ? (
           <div className="text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <span className="text-2xl">✉️</span>
+              <span className="text-green-600 text-sm font-medium">Check Mail</span>
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Check Your Email</h2>
             <p className="text-gray-600 mb-6">

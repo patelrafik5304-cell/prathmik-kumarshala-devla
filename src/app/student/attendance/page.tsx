@@ -29,9 +29,9 @@ export default function StudentAttendance() {
       {/* Summary Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {[
-          { label: 'Overall Attendance', value: '94%', color: 'bg-green-500', icon: '📊' },
-          { label: 'Present Days', value: '80', color: 'bg-blue-500', icon: '✅' },
-          { label: 'Absent Days', value: '6', color: 'bg-red-500', icon: '❌' },
+          { label: 'Overall Attendance', value: '94%', color: 'bg-green-500' },
+          { label: 'Present Days', value: '80', color: 'bg-blue-500' },
+          { label: 'Absent Days', value: '6', color: 'bg-red-500' },
         ].map((stat, i) => (
           <div key={i} className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between">
@@ -39,9 +39,7 @@ export default function StudentAttendance() {
                 <p className="text-gray-500 text-sm">{stat.label}</p>
                 <p className="text-3xl font-bold text-gray-800 mt-1">{stat.value}</p>
               </div>
-              <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}>
-                {stat.icon}
-              </div>
+              <div className={`${stat.color} w-3 h-12 rounded-lg`}></div>
             </div>
           </div>
         ))}

@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 const stats = [
-  { label: 'Total Students', value: '1,248', icon: '👨🎓', color: 'bg-blue-500' },
-  { label: 'Total Staff', value: '86', icon: '👩🏫', color: 'bg-green-500' },
-  { label: 'Present Today', value: '1,156', icon: '✅', color: 'bg-emerald-500' },
-  { label: 'Absent Today', value: '92', icon: '❌', color: 'bg-red-500' },
+  { label: 'Total Students', value: '1,248', color: 'bg-blue-500' },
+  { label: 'Total Staff', value: '86', color: 'bg-green-500' },
+  { label: 'Present Today', value: '1,156', color: 'bg-emerald-500' },
+  { label: 'Absent Today', value: '92', color: 'bg-red-500' },
 ];
 
 const recentAnnouncements = [
@@ -39,9 +39,7 @@ export default function AdminDashboard() {
                 <p className="text-gray-500 text-sm">{stat.label}</p>
                 <p className="text-3xl font-bold text-gray-800 mt-1">{stat.value}</p>
               </div>
-              <div className={`${stat.color} w-12 h-12 rounded-lg flex items-center justify-center text-2xl`}>
-                {stat.icon}
-              </div>
+              <div className={`${stat.color} w-3 h-12 rounded-lg`}></div>
             </div>
           </div>
         ))}

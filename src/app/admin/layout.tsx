@@ -7,14 +7,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { name: 'Dashboard', href: '/admin', icon: '📊' },
-  { name: 'Students', href: '/admin/students', icon: '👨🎓' },
-  { name: 'Staff', href: '/admin/staff', icon: '👩🏫' },
-  { name: 'Attendance', href: '/admin/attendance', icon: '📋' },
-  { name: 'Results', href: '/admin/results', icon: '📝' },
-  { name: 'Announcements', href: '/admin/announcements', icon: '📢' },
-  { name: 'Gallery', href: '/admin/gallery', icon: '🖼️' },
-  { name: 'Website', href: '/admin/website', icon: '🌐' },
+  { name: 'Dashboard', href: '/admin' },
+  { name: 'Students', href: '/admin/students' },
+  { name: 'Staff', href: '/admin/staff' },
+  { name: 'Attendance', href: '/admin/attendance' },
+  { name: 'Results', href: '/admin/results' },
+  { name: 'Announcements', href: '/admin/announcements' },
+  { name: 'Gallery', href: '/admin/gallery' },
+  { name: 'Website', href: '/admin/website' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -48,7 +48,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 pathname === item.href ? 'bg-indigo-800' : 'hover:bg-indigo-600'
               }`}
             >
-              <span>{item.icon}</span>
               <span>{item.name}</span>
             </Link>
           ))}
@@ -58,7 +57,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-600 transition"
           >
-            <span>🚪</span>
             <span>Logout</span>
           </button>
         </div>

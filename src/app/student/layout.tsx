@@ -7,13 +7,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
-  { name: 'Dashboard', href: '/student', icon: '🏠' },
-  { name: 'My Profile', href: '/student/profile', icon: '👤' },
-  { name: 'Attendance', href: '/student/attendance', icon: '📋' },
-  { name: 'Results', href: '/student/results', icon: '📝' },
-  { name: 'Staff', href: '/student/staff', icon: '👩🏫' },
-  { name: 'Notices', href: '/student/notices', icon: '📢' },
-  { name: 'Gallery', href: '/student/gallery', icon: '🖼️' },
+  { name: 'Dashboard', href: '/student' },
+  { name: 'My Profile', href: '/student/profile' },
+  { name: 'Attendance', href: '/student/attendance' },
+  { name: 'Results', href: '/student/results' },
+  { name: 'Staff', href: '/student/staff' },
+  { name: 'Notices', href: '/student/notices' },
+  { name: 'Gallery', href: '/student/gallery' },
 ];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -47,7 +47,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 pathname === item.href ? 'bg-indigo-800' : 'hover:bg-indigo-600'
               }`}
             >
-              <span>{item.icon}</span>
               <span>{item.name}</span>
             </Link>
           ))}
@@ -57,7 +56,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             onClick={logout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-600 transition"
           >
-            <span>🚪</span>
             <span>Logout</span>
           </button>
         </div>
