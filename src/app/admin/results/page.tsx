@@ -61,12 +61,16 @@ export default function ResultsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getSubjectsForClass = (cls: string): string[] => {
-    return classSubjects[cls] || classSubjects['default'] || DEFAULT_SUBJECTS;
+    return classSubjects[cls] || [];
   };
 
   const openSubjectSettings = (cls: string = '') => {
-    setEditingClass(cls || 'default');
-    setEditingSubjects((classSubjects[cls || 'default'] || DEFAULT_SUBJECTS).join(', '));
+    if (!cls || cls === 'all') {
+      alert('Please select a specific class to configure subjects.');
+      return;
+    }
+    setEditingClass(cls);
+    setEditingSubjects((classSubjects[cls] || []).join(', '));
     setShowSubjectSettings(true);
   };
 
@@ -106,9 +110,17 @@ export default function ResultsPage() {
   const currentSubjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
 
   const downloadCSV = () => {
-    const classStudents = filterClass === 'all' ? students : students.filter((s) => s.class === filterClass);
+    if (filterClass === 'all') {
+      alert('Please select a specific class to download results.');
+      return;
+    }
+    const classStudents = students.filter((s) => s.class === filterClass);
     if (classStudents.length === 0) { alert('No students found for the selected class.'); return; }
-    const subjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
+    const subjects = getSubjectsForClass(filterClass);
+    if (subjects.length === 0) {
+      alert(`No subjects configured for Class ${filterClass === '0' ? 'BALVATIKA' : filterClass}. Please configure subjects first.`);
+      return;
+    }
     const header = ['Username', 'Name', 'Class', 'Exam', ...subjects].join(',');
     const rows = classStudents.map((s) => { const vals = [s.username, s.name, s.class, 'Mid-term']; subjects.forEach(() => vals.push('')); return vals.join(','); });
     const csv = [header, ...rows].join('\n');
@@ -116,7 +128,7 @@ export default function ResultsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `results_${filterClass === 'all' ? 'all' : filterClass}.csv`;
+    a.download = `results_${filterClass}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -159,13 +171,18 @@ export default function ResultsPage() {
       const subjects: Record<string, number> = {};
       const cls = row['class'] || '';
       const subjectsForClass = getSubjectsForClass(cls);
+      if (subjectsForClass.length === 0) {
+        setUploadMsg(`No subjects configured for class ${cls}. Please configure subjects first.`);
+        return null;
+      }
       let total = 0; let count = 0;
       subjectsForClass.forEach((sub) => { const mark = parseFloat(row[sub.toLowerCase()] || ''); if (!isNaN(mark)) { subjects[sub] = mark; total += mark; count++; } });
       const maxMarks = count * 100;
       const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
       return { id: '', studentUsername: row['username'], studentName: row['student name'], class: cls, exam: row['exam'] || 'Mid-term', subjects, percentage: `${pct}%`, grade: calculateGrade(pct), published: false };
-    });
-    setPreview(processed);
+    }).filter(Boolean);
+    if (processed.length === 0) return;
+    setPreview(processed as Result[]);
     setShowUploadModal(true);
   };
 
@@ -361,7 +378,13 @@ export default function ResultsPage() {
     const form = e.currentTarget;
     const fd = new FormData(form);
     const student = students.find((s) => s.id === selectedStudent);
-    const subjectsForClass = student ? getSubjectsForClass(student.class) : DEFAULT_SUBJECTS;
+    if (!student) { alert('Please select a student.'); setActionLoading(false); return; }
+    const subjectsForClass = getSubjectsForClass(student.class);
+    if (subjectsForClass.length === 0) {
+      alert(`No subjects configured for Class ${student.class === '0' ? 'BALVATIKA' : student.class}. Please configure subjects first.`);
+      setActionLoading(false);
+      return;
+    }
     const subjects: Record<string, number> = {};
     let total = 0; let count = 0;
     subjectsForClass.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
@@ -512,10 +535,22 @@ export default function ResultsPage() {
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Class</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.class || ''} readOnly /></div>
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select name="exam" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
-            {(selectedStudent ? getSubjectsForClass(students.find((s) => s.id === selectedStudent)?.class || '') : DEFAULT_SUBJECTS).map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
-          </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
+              {selectedStudent && getSubjectsForClass(students.find((s) => s.id === selectedStudent)?.class || '').length > 0 ? (
+                getSubjectsForClass(students.find((s) => s.id === selectedStudent)?.class || '').map((sub) => (
+                  <div key={sub} className="flex items-center gap-3 mb-2">
+                    <span className="w-20 text-sm font-medium">{sub}</span>
+                    <input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" />
+                    <span className="text-sm text-gray-500">/100</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">
+                  No subjects configured for this class. Please configure subjects first using the "Subjects" button.
+                </div>
+              )}
+            </div>
           <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Result</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }}>Cancel</Button></div>
         </form>
       </Modal>
@@ -602,7 +637,7 @@ export default function ResultsPage() {
             </label>
             <input
               type="text"
-              value={editingClass === 'default' ? 'Default (All Classes)' : `Class ${editingClass === '0' ? 'BALVATIKA' : editingClass}`}
+              value={`Class ${editingClass === '0' ? 'BALVATIKA' : editingClass}`}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500"
               disabled
             />
