@@ -7,10 +7,19 @@ import EmptyState from '@/components/ui/EmptyState';
 import { Bell } from 'lucide-react';
 
 export default function StudentNotices() {
-  const [notices, setNotices] = useState<{ id: string; title: string; content: string; priority: string; isActive: boolean; date: string }[]>([]);
+  const [notices, setNotices] = useState<{ id: string; title: string; content: string; priority: string; isActive: boolean; date: string; startDate?: string; endDate?: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/announcements').then((r) => r.json()).then((data) => setNotices(Array.isArray(data) ? data.filter((n: any) => n.isActive) : []));
+    fetch('/api/announcements').then((r) => r.json()).then((data) => {
+      const now = new Date().toISOString().split('T')[0];
+      const active = Array.isArray(data) ? data.filter((n: any) => {
+        if (!n.isActive) return false;
+        if (n.startDate && n.startDate > now) return false;
+        if (n.endDate && n.endDate < now) return false;
+        return true;
+      }) : [];
+      setNotices(active);
+    });
   }, []);
 
   return (
@@ -30,6 +39,9 @@ export default function StudentNotices() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">{n.title}</h3>
                   <p className="text-sm text-gray-500 mt-1">{n.date}</p>
+                  {n.startDate && n.endDate && (
+                    <p className="text-sm text-blue-600 mt-1">📅 {n.startDate} to {n.endDate}</p>
+                  )}
                 </div>
                 <Badge variant={n.priority === 'high' ? 'danger' : n.priority === 'medium' ? 'warning' : 'success'}>{n.priority}</Badge>
               </div>

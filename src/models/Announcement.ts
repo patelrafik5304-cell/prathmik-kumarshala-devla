@@ -7,6 +7,8 @@ const AnnouncementSchema = new Schema(
     priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
     isActive: { type: Boolean, default: true },
     date: { type: String, required: true },
+    startDate: { type: String },
+    endDate: { type: String },
   },
   { timestamps: true }
 );
