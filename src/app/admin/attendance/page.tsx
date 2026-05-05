@@ -52,7 +52,7 @@ export default function AttendancePage() {
 
   useEffect(() => {
     const initial: Record<string, string> = {};
-    filteredStudents.forEach((s) => { initial[s.id] = ''; });
+    filteredStudents.forEach((s) => { initial[s.id] = 'present'; });
     setAttendance(initial);
   }, [selectedClass, filteredStudents.length]);
 
@@ -73,7 +73,7 @@ export default function AttendancePage() {
       studentName: student.name,
       class: student.class,
       date,
-      status: attendance[student.id] || 'absent',
+      status: attendance[student.id] || 'present',
     }));
     await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
     setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
