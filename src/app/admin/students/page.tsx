@@ -49,6 +49,9 @@ export default function StudentsPage() {
   const [bulkDeleteClass, setBulkDeleteClass] = useState('');
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
+  const [showPromoteModal, setShowPromoteModal] = useState(false);
+  const [promoteFromClass, setPromoteFromClass] = useState('');
+  const [promoteToClass, setPromoteToClass] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,6 +132,32 @@ export default function StudentsPage() {
     setLoading(false);
     setShowBulkDeleteModal(false);
     setBulkDeleteClass('');
+  };
+
+  const handlePromoteStudents = async () => {
+    if (!promoteFromClass || !promoteToClass) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/students/promote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromClass: promoteFromClass, toClass: promoteToClass }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const fromDisplay = promoteFromClass === '0' ? 'BALVATIKA' : `Class ${promoteFromClass}`;
+        const toDisplay = promoteToClass === '0' ? 'BALVATIKA' : `Class ${promoteToClass}`;
+        setSavedMsg(`Promoted ${data.updatedCount} students from ${fromDisplay} to ${toDisplay}`);
+        fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
+        setTimeout(() => setSavedMsg(''), 5000);
+      }
+    } catch (e) {
+      console.error('Promote failed', e);
+    }
+    setLoading(false);
+    setShowPromoteModal(false);
+    setPromoteFromClass('');
+    setPromoteToClass('');
   };
 
   const parseCsv = (text: string): CsvRow[] => {
@@ -376,6 +405,54 @@ export default function StudentsPage() {
         </Card>
       )}
 
+      {isAdmin && (
+        <Card className="p-6 mb-6 border-2 border-blue-200 bg-blue-50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-blue-800">Promote Students to Next Year</h3>
+              <p className="text-sm text-blue-600 mt-1">Promote all students from one class to the next (e.g., Class 1 → Class 2). Class 8 students will be graduated.</p>
+            </div>
+            <div className="flex gap-3 items-end">
+              <div>
+                <select
+                  value={promoteFromClass}
+                  onChange={(e) => setPromoteFromClass(e.target.value)}
+                  className="px-4 py-2.5 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white"
+                >
+                  <option value="">From Class</option>
+                  <option value="0">BALVATIKA</option>
+                  {[1, 2, 3, 4, 5, 6, 7].map((c) => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="text-blue-600 font-bold">→</span>
+              <div>
+                <select
+                  value={promoteToClass}
+                  onChange={(e) => setPromoteToClass(e.target.value)}
+                  className="px-4 py-2.5 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white"
+                >
+                  <option value="">To Class</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                  <option value="graduated">Graduated</option>
+                </select>
+              </div>
+              <Button
+                variant="primary"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={!promoteFromClass || !promoteToClass}
+                onClick={() => setShowPromoteModal(true)}
+              >
+                Promote Students
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {savedMsg && (
         <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
           <Check className="w-4 h-4" /> {savedMsg}
@@ -611,6 +688,29 @@ export default function StudentsPage() {
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleBulkDelete}>Yes, Delete All</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={showPromoteModal} onClose={() => setShowPromoteModal(false)} title="Confirm Promote Students">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to promote all students from</p>
+          <p className="font-semibold text-gray-800 mb-2">
+            {promoteFromClass === '0' ? 'BALVATIKA' : `Class ${promoteFromClass}`}
+          </p>
+          <p className="text-gray-600 mb-2">to</p>
+          <p className="font-semibold text-gray-800 mb-6">
+            {promoteToClass === 'graduated' ? 'GRADUATED' : promoteToClass === '0' ? 'BALVATIKA' : `Class ${promoteToClass}`}
+          </p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowPromoteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePromoteStudents}>Yes, Promote All</Button>
           </div>
         </div>
       </Modal>
