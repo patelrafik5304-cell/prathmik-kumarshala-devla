@@ -16,6 +16,8 @@ interface Announcement {
   isActive: boolean;
   date: string;
   type?: 'general' | 'holiday' | 'vacation';
+  startDate?: string;
+  endDate?: string;
 }
 
 export default function AnnouncementsPage() {
