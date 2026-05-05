@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Plus, Download, FileText, Check, X, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Upload, Plus, Download, FileText, Check, X, Edit2, Eye, EyeOff, Trash2, Settings } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
@@ -21,7 +21,7 @@ interface Result {
   published: boolean;
 }
 
-const SUBJECTS = ['Math', 'Science', 'English', 'Social', 'Hindi'];
+const DEFAULT_SUBJECTS = ['Math', 'Science', 'English', 'Social', 'Hindi'];
 
 function calculateGrade(pct: number): string {
   if (pct >= 90) return 'A+';
@@ -54,21 +54,63 @@ export default function ResultsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [showSubjectSettings, setShowSubjectSettings] = useState(false);
+  const [editingClass, setEditingClass] = useState('');
+  const [editingSubjects, setEditingSubjects] = useState<string>('');
+  const [classSubjects, setClassSubjects] = useState<Record<string, string[]>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const getSubjectsForClass = (cls: string): string[] => {
+    return classSubjects[cls] || classSubjects['default'] || DEFAULT_SUBJECTS;
+  };
+
+  const openSubjectSettings = (cls: string = '') => {
+    setEditingClass(cls || 'default');
+    setEditingSubjects((classSubjects[cls || 'default'] || DEFAULT_SUBJECTS).join(', '));
+    setShowSubjectSettings(true);
+  };
+
+  const saveSubjectSettings = async () => {
+    const subjects = editingSubjects.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    if (subjects.length === 0) {
+      alert('Please add at least one subject');
+      return;
+    }
+    const updated = { ...classSubjects, [editingClass]: subjects };
+    setClassSubjects(updated);
+    setShowSubjectSettings(false);
+    try {
+      await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    }
+  };
+
   useEffect(() => {
-    fetch('/api/results').then((r) => r.json()).then((data) => setResults(Array.isArray(data) ? data : []));
+    fetch('/api/results')
+      .then((r) => r.json())
+      .then((data) => {
+        const resultsWithDefaults = Array.isArray(data) ? data.map((r: any) => ({ ...r, published: r.published ?? false })) : [];
+        setResults(resultsWithDefaults);
+      });
     fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
+    fetch('/api/settings').then((r) => r.json()).then((data) => {
+      if (data && typeof data === 'object') {
+        setClassSubjects(data);
+      }
+    });
   }, []);
 
   const classes = ['all', ...[...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0))];
   const filtered = filterClass === 'all' ? results : results.filter((r) => r.class === filterClass);
+  const currentSubjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
 
   const downloadCSV = () => {
     const classStudents = filterClass === 'all' ? students : students.filter((s) => s.class === filterClass);
     if (classStudents.length === 0) { alert('No students found for the selected class.'); return; }
-    const header = ['Username', 'Name', 'Class', 'Exam', ...SUBJECTS].join(',');
-    const rows = classStudents.map((s) => { const vals = [s.username, s.name, s.class, 'Mid-term']; SUBJECTS.forEach(() => vals.push('')); return vals.join(','); });
+    const subjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
+    const header = ['Username', 'Name', 'Class', 'Exam', ...subjects].join(',');
+    const rows = classStudents.map((s) => { const vals = [s.username, s.name, s.class, 'Mid-term']; subjects.forEach(() => vals.push('')); return vals.join(','); });
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -115,11 +157,13 @@ export default function ResultsPage() {
     if (rows.length === 0) { setUploadMsg('No valid data found.'); return; }
     const processed = rows.map((row) => {
       const subjects: Record<string, number> = {};
+      const cls = row['class'] || '';
+      const subjectsForClass = getSubjectsForClass(cls);
       let total = 0; let count = 0;
-      SUBJECTS.forEach((sub) => { const mark = parseFloat(row[sub.toLowerCase()] || ''); if (!isNaN(mark)) { subjects[sub] = mark; total += mark; count++; } });
+      subjectsForClass.forEach((sub) => { const mark = parseFloat(row[sub.toLowerCase()] || ''); if (!isNaN(mark)) { subjects[sub] = mark; total += mark; count++; } });
       const maxMarks = count * 100;
       const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
-      return { id: '', studentUsername: row['username'], studentName: row['student name'], class: row['class'], exam: row['exam'] || 'Mid-term', subjects, percentage: `${pct}%`, grade: calculateGrade(pct), published: false };
+      return { id: '', studentUsername: row['username'], studentName: row['student name'], class: cls, exam: row['exam'] || 'Mid-term', subjects, percentage: `${pct}%`, grade: calculateGrade(pct), published: false };
     });
     setPreview(processed);
     setShowUploadModal(true);
@@ -176,14 +220,27 @@ export default function ResultsPage() {
     }
     setBulkActionLoading(true);
     const toUpdate = filtered.filter(r => !r.published);
+    if (toUpdate.length === 0) {
+      alert('All results in this class are already published.');
+      setBulkActionLoading(false);
+      return;
+    }
     // Optimistic update
     setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: true } : r));
     try {
       const promises = toUpdate.map(r =>
         fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: true }) })
       );
-      await Promise.all(promises);
+      const responses = await Promise.all(promises);
+      const failed = responses.filter(res => !res.ok);
+      if (failed.length > 0) {
+        const errorText = await failed[0].text();
+        console.error('Bulk publish failed:', errorText);
+        throw new Error('Some updates failed');
+      }
     } catch (err) {
+      console.error('Bulk publish error:', err);
+      alert('Failed to publish all results. Reverting changes.');
       // Revert on error
       const r = await fetch('/api/results');
       const d = await r.json();
@@ -199,14 +256,27 @@ export default function ResultsPage() {
     }
     setBulkActionLoading(true);
     const toUpdate = filtered.filter(r => r.published);
+    if (toUpdate.length === 0) {
+      alert('All results in this class are already unpublished.');
+      setBulkActionLoading(false);
+      return;
+    }
     // Optimistic update
     setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: false } : r));
     try {
       const promises = toUpdate.map(r =>
         fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: false }) })
       );
-      await Promise.all(promises);
+      const responses = await Promise.all(promises);
+      const failed = responses.filter(res => !res.ok);
+      if (failed.length > 0) {
+        const errorText = await failed[0].text();
+        console.error('Bulk unpublish failed:', errorText);
+        throw new Error('Some updates failed');
+      }
     } catch (err) {
+      console.error('Bulk unpublish error:', err);
+      alert('Failed to unpublish all results. Reverting changes.');
       // Revert on error
       const r = await fetch('/api/results');
       const d = await r.json();
@@ -290,9 +360,10 @@ export default function ResultsPage() {
     const form = e.currentTarget;
     const fd = new FormData(form);
     const student = students.find((s) => s.id === selectedStudent);
+    const subjectsForClass = student ? getSubjectsForClass(student.class) : DEFAULT_SUBJECTS;
     const subjects: Record<string, number> = {};
     let total = 0; let count = 0;
-    SUBJECTS.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
+    subjectsForClass.forEach((sub) => { const val = parseInt(fd.get(sub) as string); if (!isNaN(val)) { subjects[sub] = val; total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
     try {
@@ -337,6 +408,13 @@ export default function ResultsPage() {
               <p className="text-sm text-blue-600 mt-1">Publish, unpublish, or delete all results in the selected class</p>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                className="bg-white hover:bg-gray-50 text-gray-700"
+                onClick={() => openSubjectSettings(filterClass === 'all' ? '' : filterClass)}
+              >
+                <Settings className="w-4 h-4" /> Subjects
+              </Button>
               <Button
                 variant="primary"
                 className="bg-green-600 hover:bg-green-700 text-white"
@@ -435,7 +513,7 @@ export default function ResultsPage() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
-            {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
+            {(selectedStudent ? getSubjectsForClass(students.find((s) => s.id === selectedStudent)?.class || '') : DEFAULT_SUBJECTS).map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input name={sub} type="number" min="0" max="100" placeholder="Marks" className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
           </div>
           <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Result</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowAddModal(false); setSelectedStudent(''); }}>Cancel</Button></div>
         </form>
@@ -471,7 +549,7 @@ export default function ResultsPage() {
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Exam Type</label><select value={editExam} onChange={(e) => setEditExam(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white"><option>Mid-term</option><option>Final</option><option>Unit Test</option></select></div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Subjects (Marks)</label>
-              {SUBJECTS.map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input type="number" min="0" max="100" value={editMarks[sub] ?? ''} onChange={(e) => setEditMarks({ ...editMarks, [sub]: parseInt(e.target.value) || 0 })} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
+              {getSubjectsForClass(editingResult.class).map((sub) => (<div key={sub} className="flex items-center gap-3 mb-2"><span className="w-20 text-sm font-medium">{sub}</span><input type="number" min="0" max="100" value={editMarks[sub] ?? ''} onChange={(e) => setEditMarks({ ...editMarks, [sub]: parseInt(e.target.value) || 0 })} className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-primary transition-all" /><span className="text-sm text-gray-500">/100</span></div>))}
             </div>
             <div className="flex gap-3 pt-2"><Button type="submit" loading={actionLoading} className="flex-1">Save Changes</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowEditModal(false); setEditingResult(null); }}>Cancel</Button></div>
           </form>
@@ -510,6 +588,40 @@ export default function ResultsPage() {
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={bulkActionLoading} onClick={handleBulkDelete}>Yes, Delete All</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Subject Settings Modal */}
+      <Modal open={showSubjectSettings} onClose={() => setShowSubjectSettings(false)} title="Configure Subjects">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Class
+            </label>
+            <input
+              type="text"
+              value={editingClass === 'default' ? 'Default (All Classes)' : `Class ${editingClass === '0' ? 'BALVATIKA' : editingClass}`}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500"
+              disabled
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Subjects (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={editingSubjects}
+              onChange={(e) => setEditingSubjects(e.target.value)}
+              placeholder="e.g., Math, Science, English"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
+            />
+            <p className="text-xs text-gray-500 mt-1">Enter subject names separated by commas</p>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button onClick={saveSubjectSettings} className="flex-1">Save Settings</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setShowSubjectSettings(false)}>Cancel</Button>
           </div>
         </div>
       </Modal>

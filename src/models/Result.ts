@@ -9,6 +9,8 @@ const ResultSchema = new Schema(
     subjects: { type: Map, of: Number, default: {} },
     percentage: { type: String, required: true },
     grade: { type: String, required: true },
+    published: { type: Boolean, default: false },
+    studentUsername: { type: String },
   },
   { timestamps: true }
 );
