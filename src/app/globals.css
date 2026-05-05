@@ -236,14 +236,42 @@ body {
   }
 }
 
-/* ===== ANTI-FLICKER ===== */
-.prevent-flicker {
-  -webkit-transform: translate3d(0, 0, 0);
-  transform: translate3d(0, 0, 0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  -webkit-perspective: 1000;
-  perspective: 1000;
+/* ===== SCREENSHOT PROTECTION ===== */
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+img, video, canvas {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+/* Disable printing */
+@media print {
+  body * {
+    display: none !important;
+  }
+  body::after {
+    content: "Printing is disabled for this website.";
+    display: block !important;
+    text-align: center;
+    padding: 50px;
+    font-size: 24px;
+    color: red;
+  }
+}
+
+/* iOS specific protection */
+* {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== TABLET VIEWPORT ===== */
