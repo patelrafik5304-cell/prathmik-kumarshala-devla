@@ -36,6 +36,9 @@ export default function AttendancePage() {
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
+  const [viewMode, setViewMode] = useState<'mark' | 'view-absent'>('mark');
+  const [absentStudents, setAbsentStudents] = useState<any[]>([]);
+  const [loadingAbsent, setLoadingAbsent] = useState(false);
 
   useEffect(() => {
     fetch('/api/students').then((r) => r.json()).then((data) => {
@@ -78,6 +81,19 @@ export default function AttendancePage() {
     setTimeout(() => setSavedMsg(''), 3000);
   };
 
+  const fetchAbsentStudents = async () => {
+    setLoadingAbsent(true);
+    try {
+      const res = await fetch(`/api/attendance?date=${date}`);
+      const data = await res.json();
+      const absent = data.filter((r: any) => r.status === 'absent');
+      setAbsentStudents(absent);
+    } catch (e) {
+      console.error('Failed to fetch absent students', e);
+    }
+    setLoadingAbsent(false);
+  };
+
   const presentCount = Object.values(attendance).filter((v) => v === 'present').length;
   const absentCount = Object.values(attendance).filter((v) => v === 'absent').length;
   const dateValid = isDateValid(date);
@@ -87,6 +103,15 @@ export default function AttendancePage() {
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Attendance Management</h1>
         <p className="text-gray-500 mt-1 text-sm">Mark and track student attendance (last 15 days only)</p>
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        <button onClick={() => setViewMode('mark')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${viewMode === 'mark' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          Mark Attendance
+        </button>
+        <button onClick={() => setViewMode('view-absent')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${viewMode === 'view-absent' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          View Absentees
+        </button>
       </div>
 
       {!dateValid && (
@@ -139,46 +164,115 @@ export default function AttendancePage() {
         </div>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-sm text-primary">{student.username}</td>
-                  <td className="px-6 py-4 font-medium text-gray-800">{student.name}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant={attendance[student.id] === 'present' ? 'success' : attendance[student.id] === 'absent' ? 'danger' : 'default'}>
-                      {attendance[student.id] || 'Not marked'}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button onClick={() => handleAttendance(student.id, 'present')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'present' ? 'bg-green-600 text-white shadow-lg shadow-green-500/25' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
-                        Present
-                      </button>
-                      <button onClick={() => handleAttendance(student.id, 'absent')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'absent' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
-                        Absent
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredStudents.length === 0 && (
-                <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">No students in this class</td></tr>
-              )}
-            </tbody>
-          </table>
+      {viewMode === 'view-absent' && (
+        <div>
+          <Card className="p-6 mb-6">
+            <div className="flex items-end gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="date"
+                    value={date}
+                    min={dateRange.min}
+                    max={dateRange.max}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition-all"
+                  />
+                </div>
+              </div>
+              <Button onClick={fetchAbsentStudents} loading={loadingAbsent} className="bg-red-600 hover:bg-red-700">
+                <XIcon className="w-4 h-4" /> View Absent Students
+              </Button>
+            </div>
+          </Card>
+
+          {absentStudents.length > 0 && (
+            <>
+              <div className="mb-4 flex items-center gap-3">
+                <Badge variant="danger" className="text-base px-4 py-2">
+                  <XIcon className="w-4 h-4 mr-1" /> {absentStudents.length} Student{absentStudents.length > 1 ? 's' : ''} Absent on {date}
+                </Badge>
+              </div>
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-red-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Class</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {absentStudents.map((record, idx) => (
+                        <tr key={idx} className="hover:bg-red-50/50 transition-colors">
+                          <td className="px-6 py-4 font-mono text-sm text-red-600">{record.studentUsername}</td>
+                          <td className="px-6 py-4 font-medium text-gray-800">{record.studentName}</td>
+                          <td className="px-6 py-4">
+                            <Badge variant="default">{record.class === '0' ? 'BALVATIKA' : `Class ${record.class}`}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {!loadingAbsent && absentStudents.length === 0 && date && (
+            <Card className="p-12 text-center">
+              <XIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">No absent records found for {date}. Click "View Absent Students" to check.</p>
+            </Card>
+          )}
         </div>
-      </Card>
+      )}
+
+      {viewMode === 'mark' && (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4 font-mono text-sm text-primary">{student.username}</td>
+                    <td className="px-6 py-4 font-medium text-gray-800">{student.name}</td>
+                    <td className="px-6 py-4">
+                      <Badge variant={attendance[student.id] === 'present' ? 'success' : attendance[student.id] === 'absent' ? 'danger' : 'default'}>
+                        {attendance[student.id] || 'Not marked'}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => handleAttendance(student.id, 'present')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'present' ? 'bg-green-600 text-white shadow-lg shadow-green-500/25' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                          Present
+                        </button>
+                        <button onClick={() => handleAttendance(student.id, 'absent')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'absent' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+                          Absent
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filteredStudents.length === 0 && (
+                  <tr><td colSpan={4} className="px-6 py-12 text-center text-gray-500">No students in this class</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
