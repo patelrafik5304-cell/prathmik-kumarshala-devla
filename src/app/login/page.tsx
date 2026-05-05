@@ -43,8 +43,10 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await login(username, password, remember);
-      if (remember) {
+      // Never remember admin logins, only students
+      const isAdminLogin = username === '242105010083';
+      await login(username, password, !isAdminLogin && remember);
+      if (!isAdminLogin && remember) {
         localStorage.setItem('rememberedUser', JSON.stringify({ username }));
       } else {
         localStorage.removeItem('rememberedUser');

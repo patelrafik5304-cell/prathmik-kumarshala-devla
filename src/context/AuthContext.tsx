@@ -23,11 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('authUser');
     if (saved) {
       try {
-        setUser(JSON.parse(saved));
+        const parsedUser = JSON.parse(saved);
+        // Do not restore admin session from localStorage - admin must login each time
+        if (parsedUser.role !== 'admin') {
+          setUser(parsedUser);
+        }
       } catch {}
     }
     setLoading(false);
-    setInitialized(true);
   }, []);
 
   const login = async (username: string, password: string, remember: boolean = true) => {
