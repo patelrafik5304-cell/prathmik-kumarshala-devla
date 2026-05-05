@@ -407,48 +407,50 @@ export default function StudentsPage() {
 
       {isAdmin && (
         <Card className="p-6 mb-6 border-2 border-blue-200 bg-blue-50">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-blue-800">Promote Students to Next Year</h3>
-              <p className="text-sm text-blue-600 mt-1">Promote all students from one class to the next (e.g., Class 1 → Class 2). Class 8 students will be graduated.</p>
-            </div>
-            <div className="flex gap-3 items-end">
-              <div>
-                <select
-                  value={promoteFromClass}
-                  onChange={(e) => setPromoteFromClass(e.target.value)}
-                  className="px-4 py-2.5 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white"
-                >
-                  <option value="">From Class</option>
-                  <option value="0">BALVATIKA</option>
-                  {[1, 2, 3, 4, 5, 6, 7].map((c) => (
-                    <option key={c} value={c}>Class {c}</option>
-                  ))}
-                </select>
-              </div>
-              <span className="text-blue-600 font-bold">→</span>
-              <div>
-                <select
-                  value={promoteToClass}
-                  onChange={(e) => setPromoteToClass(e.target.value)}
-                  className="px-4 py-2.5 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white"
-                >
-                  <option value="">To Class</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
-                    <option key={c} value={c}>Class {c}</option>
-                  ))}
-                  <option value="graduated">Graduated</option>
-                </select>
-              </div>
-              <Button
-                variant="primary"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={!promoteFromClass || !promoteToClass}
-                onClick={() => setShowPromoteModal(true)}
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-blue-800">Promote Students to Next Year</h3>
+            <p className="text-sm text-blue-600 mt-1">Promote all students from one class to the next (e.g., Class 1 → Class 2). Class 8 students will be graduated.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label className="block text-sm font-medium text-blue-700 mb-2">From Class</label>
+              <select
+                value={promoteFromClass}
+                onChange={(e) => setPromoteFromClass(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white text-base"
               >
-                Promote Students
-              </Button>
+                <option value="">Select class</option>
+                <option value="0">BALVATIKA</option>
+                {[1, 2, 3, 4, 5, 6, 7].map((c) => (
+                  <option key={c} value={c}>Class {c}</option>
+                ))}
+              </select>
             </div>
+            <div className="flex items-center justify-center text-blue-600 font-bold text-xl">
+              →
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-blue-700 mb-2">To Class</label>
+              <select
+                value={promoteToClass}
+                onChange={(e) => setPromoteToClass(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl outline-none focus:border-blue-500 bg-white text-base"
+              >
+                <option value="">Select class</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
+                  <option key={c} value={c}>Class {c}</option>
+                ))}
+                <option value="graduated">Graduated</option>
+              </select>
+            </div>
+            <Button
+              variant="primary"
+              className="bg-blue-600 hover:bg-blue-700 text-white py-3 text-base"
+              disabled={!promoteFromClass || !promoteToClass}
+              onClick={() => setShowPromoteModal(true)}
+            >
+              Promote All Students
+            </Button>
           </div>
         </Card>
       )}
@@ -708,9 +710,9 @@ export default function StudentsPage() {
             {promoteToClass === 'graduated' ? 'GRADUATED' : promoteToClass === '0' ? 'BALVATIKA' : `Class ${promoteToClass}`}
           </p>
           <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
-          <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setShowPromoteModal(false)}>No</Button>
-            <Button variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePromoteStudents}>Yes, Promote All</Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="secondary" className="flex-1 py-3" onClick={() => setShowPromoteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3" onClick={handlePromoteStudents}>Yes, Promote All</Button>
           </div>
         </div>
       </Modal>
