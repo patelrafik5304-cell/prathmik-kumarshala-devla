@@ -8,6 +8,7 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600
 export const metadata: Metadata = {
   title: "Prathmik Kumarshala - School Management System",
   description: "Modern school management system with admin and student portals",
+  manifest: '/manifest',
   icons: {
     icon: [
       { url: "/favicon.ico?v=3", sizes: "32x32" },
