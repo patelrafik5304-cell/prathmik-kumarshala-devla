@@ -53,6 +53,7 @@ export default function ResultsPage() {
   const [editMarks, setEditMarks] = useState<Record<string, number>>({});
   const [actionLoading, setActionLoading] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -214,6 +215,30 @@ export default function ResultsPage() {
     setBulkActionLoading(false);
   };
 
+  const handleBulkDelete = async () => {
+    if (filterClass === 'all') {
+      alert('Please select a specific class to bulk delete.');
+      return;
+    }
+    setBulkActionLoading(true);
+    const toDelete = filtered;
+    // Optimistic update
+    setResults(prev => prev.filter(r => r.class !== filterClass));
+    setShowBulkDeleteModal(false);
+    try {
+      const promises = toDelete.map(r =>
+        fetch(`/api/results?id=${r.id}`, { method: 'DELETE' })
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      // Revert on error
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    }
+    setBulkActionLoading(false);
+  };
+
   const handleTogglePublish = async (id: string, current: boolean) => {
     // Optimistic update
     setResults(prev => prev.map((r) => r.id === id ? { ...r, published: !current } : r));
@@ -309,7 +334,7 @@ export default function ResultsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="font-semibold text-blue-800">Bulk Actions for {filterClass === 'all' ? 'All Classes' : `Class ${filterClass === '0' ? 'BALVATIKA' : filterClass}`}</h3>
-              <p className="text-sm text-blue-600 mt-1">Publish or unpublish all results in the selected class</p>
+              <p className="text-sm text-blue-600 mt-1">Publish, unpublish, or delete all results in the selected class</p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -329,6 +354,14 @@ export default function ResultsPage() {
                 onClick={handleBulkUnpublish}
               >
                 <EyeOff className="w-4 h-4" /> Unpublish All
+              </Button>
+              <Button
+                variant="primary"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={filtered.length === 0}
+                onClick={() => setShowBulkDeleteModal(true)}
+              >
+                <Trash2 className="w-4 h-4" /> Delete All
               </Button>
             </div>
           </div>
@@ -458,6 +491,25 @@ export default function ResultsPage() {
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={actionLoading} onClick={handleDelete}>Yes, Delete</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bulk Delete Confirmation Modal */}
+      <Modal open={showBulkDeleteModal} onClose={() => setShowBulkDeleteModal(false)} title="Confirm Bulk Delete">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete ALL results for</p>
+          <p className="font-semibold text-gray-800 mb-2">
+            {filterClass === '0' ? 'BALVATIKA' : `Class ${filterClass}`}
+          </p>
+          <p className="text-sm text-red-600 mb-2">This will delete {filtered.length} result(s).</p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={bulkActionLoading} onClick={handleBulkDelete}>Yes, Delete All</Button>
           </div>
         </div>
       </Modal>
