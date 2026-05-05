@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const [loading, setLoading] = useState(false);
-  const [initialized, setInitialized] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
   const login = async (username: string, password: string, remember: boolean = true) => {
