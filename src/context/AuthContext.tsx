@@ -5,29 +5,27 @@ import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: { username: string; name: string; role: string; class?: string } | null;
-  loading: boolean;
-  initialized: boolean;
   login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
-  autoLogin: (user: { username: string; name: string; role: string; class?: string }) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    setInitialized(true);
+    const saved = localStorage.getItem('authUser');
+    if (saved) {
+      try {
+        const parsedUser = JSON.parse(saved);
+        if (parsedUser?.role && parsedUser.role !== 'admin') {
+          setUser(parsedUser);
+        }
+      } catch {}
+    }
   }, []);
-
-  const autoLogin = (userObj: { username: string; name: string; role: string; class?: string }) => {
-    setUser(userObj);
-    router.push(userObj.role === 'admin' ? '/admin' : userObj.role === 'staff' ? '/staff' : '/student');
-  };
 
   const login = async (username: string, password: string, remember: boolean = true) => {
     const res = await fetch('/api/auth/login', {
@@ -54,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, initialized, login, logout, autoLogin }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,18 +6,15 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/ui/Sidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, initialized } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (initialized) {
-      if (!user) router.push('/login');
-      else if (user?.role !== 'admin') router.push('/student');
-    }
-  }, [initialized, user, router]);
+    if (!user) router.push('/login');
+    else if (user?.role !== 'admin') router.push('/student');
+  }, [user, router]);
 
-  if (!initialized) return null;
   if (!user || user.role !== 'admin') return null;
 
   return (

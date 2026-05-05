@@ -142,3 +142,85 @@ body {
 .stagger-6 { animation-delay: 0.3s; }
 .stagger-7 { animation-delay: 0.35s; }
 .stagger-8 { animation-delay: 0.4s; }
+
+/* Tablet-specific fixes to prevent blinking/flickering */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Disable heavy animations on tablets */
+  .animate-gradient-text {
+    animation: none !important;
+    background-position: 0% 50% !important;
+  }
+
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-float-fast {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  /* Reduce paint operations */
+  * {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /* Prevent repaints from transforms */
+  .transform {
+    transform: translateZ(0);
+  }
+
+  /* Disable backdrop-filter on tablets if used */
+  .backdrop-blur {
+    backdrop-filter: none !important;
+  }
+
+  /* Disable hover effects on tablets (touch devices) */
+  .hover\:scale-105:hover,
+  .hover\:rotate-2:hover,
+  .hover\:from-amber-600:hover,
+  .hover\:to-orange-600:hover,
+  .hover\:scale-\[1\.02\]:hover,
+  .hover\:shadow-xl:hover {
+    transform: none !important;
+    background: inherit !important;
+  }
+
+  /* Stabilize inputs on tablets */
+  input, button, select, textarea {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* iPad-specific fixes (iPad Pro 1024px, iPad 768px) */
+@media only screen and (device-width: 768px),
+       only screen and (device-width: 1024px) {
+  /* Prevent flickering on iPad */
+  body {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* Stabilize fixed/absolute positioned elements */
+  .fixed, .absolute {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+  }
+}
+
+/* General anti-flicker for all browsers */
+.prevent-flicker {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+}
+
+/* Tablet viewport height fix - address bar show/hide issue */
+@media (pointer: coarse) and (min-width: 768px) and (max-width: 1024px) {
+  .min-h-screen {
+    min-height: 100dvh !important;
+  }
+}

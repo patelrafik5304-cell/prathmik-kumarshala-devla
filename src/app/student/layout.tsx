@@ -6,18 +6,15 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/ui/Sidebar';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, initialized } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (initialized) {
-      if (!user) router.push('/login');
-      else if (user?.role === 'admin') router.push('/admin');
-    }
-  }, [initialized, user, router]);
+    if (!user) router.push('/login');
+    else if (user?.role === 'admin') router.push('/admin');
+  }, [user, router]);
 
-  if (!initialized) return null;
   if (!user || user.role === 'admin') return null;
 
   return (
