@@ -14,12 +14,41 @@ interface AttendanceRecord {
   status: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  date: string;
+  type?: 'general' | 'holiday' | 'vacation';
+}
+
+function checkDateRestrictions(dateStr: string, announcements: Announcement[]): { isRestricted: boolean; reason: string } {
+  // Check if Sunday
+  const dayOfWeek = new Date(dateStr).getDay();
+  if (dayOfWeek === 0) {
+    return { isRestricted: true, reason: 'Sunday - No attendance recorded' };
+  }
+
+  // Check for holiday/vacation announcements
+  const holidayAnnouncement = announcements.find((a) =>
+    a.date === dateStr && (a.type === 'holiday' || a.type === 'vacation')
+  );
+
+  if (holidayAnnouncement) {
+    return { isRestricted: true, reason: holidayAnnouncement.title || 'Holiday/Vacation' };
+  }
+
+  return { isRestricted: false, reason: '' };
+}
+
 export default function StaffAttendancePage() {
   const [selectedClass, setSelectedClass] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<{ id: string; name: string; class: string }[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [isHoliday, setIsHoliday] = useState(false);
+  const [holidayReason, setHolidayReason] = useState('');
 
   useEffect(() => {
     fetch('/api/students')
@@ -30,12 +59,30 @@ export default function StaffAttendancePage() {
           setSelectedClass(data[0].class);
         }
       });
+
+    fetch('/api/announcements')
+      .then((r) => r.json())
+      .then((data) => setAnnouncements(Array.isArray(data) ? data : []));
   }, []);
 
   const classes = [...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
 
   const fetchAttendance = async () => {
     setLoading(true);
+    
+    // Check date restrictions
+    const restriction = checkDateRestrictions(date, announcements);
+    if (restriction.isRestricted) {
+      setIsHoliday(true);
+      setHolidayReason(restriction.reason);
+      setRecords([]);
+      setLoading(false);
+      return;
+    }
+    
+    setIsHoliday(false);
+    setHolidayReason('');
+    
     try {
       const res = await fetch(`/api/attendance?date=${date}`);
       const data = await res.json();
@@ -107,6 +154,13 @@ export default function StaffAttendancePage() {
         </div>
       </Card>
 
+      {isHoliday && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>No attendance records for {date}: {holidayReason}</span>
+        </div>
+      )}
+
       {loading ? (
         <Card className="p-12 text-center">
           <p className="text-gray-500">Loading attendance records...</p>
@@ -140,7 +194,7 @@ export default function StaffAttendancePage() {
                     </td>
                   </tr>
                 ))}
-                {records.length === 0 && (
+                {records.length === 0 && !isHoliday && (
                   <tr>
                     <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                       No attendance records found for {date}
