@@ -290,14 +290,29 @@ export default function StudentsPage() {
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Students Management</h1>
           <p className="text-gray-500 mt-1 text-sm">Manage all student records</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={downloadStudentPDF} className="flex-1 sm:flex-none justify-center">
+        
+        {/* Mobile action bar - visible on small screens */}
+        <div className="flex sm:hidden gap-2">
+          <Button variant="secondary" onClick={downloadStudentPDF} className="flex-1 justify-center py-3 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
+            <FileDown className="w-5 h-5" /> Download List
+          </Button>
+          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 justify-center py-3">
+            <Upload className="w-5 h-5" /> Upload CSV
+          </Button>
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="flex-1 justify-center py-3">
+            <Plus className="w-5 h-5" /> Add
+          </Button>
+        </div>
+        
+        {/* Desktop buttons - hidden on mobile */}
+        <div className="hidden sm:flex gap-2">
+          <Button variant="secondary" onClick={downloadStudentPDF} className="justify-center">
             <FileDown className="w-4 h-4" /> Download List PDF
           </Button>
-          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 sm:flex-none justify-center">
+          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center">
             <Upload className="w-4 h-4" /> Upload CSV
           </Button>
-          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="flex-1 sm:flex-none justify-center">
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="justify-center">
             <Plus className="w-4 h-4" /> Add Student
           </Button>
         </div>
