@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, Bell, Images, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Bell, Images, LogOut, Menu, X, Calendar } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import Button from '@/components/ui/Button';
 
 const navItems = [
   { href: '/staff', label: 'Dashboard', icon: LayoutDashboard },
