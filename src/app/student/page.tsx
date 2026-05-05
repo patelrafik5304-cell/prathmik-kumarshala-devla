@@ -47,12 +47,12 @@ export default function StudentDashboard() {
         setAnnouncements(visible);
       });
 
-    fetch('/api/results')
+    fetch(`/api/results?studentUsername=${user.username}&published=true`)
       .then((r) => r.json())
       .then((data) => {
         const all = Array.isArray(data) ? data : [];
         const myResults = all.filter(
-          (r: Result) => r.studentUsername === user?.username && r.published === true
+          (r: Result) => r.published === true
         );
         const latest = myResults
           .filter((r, i, arr) => arr.findIndex(x => x.exam === r.exam) === i)

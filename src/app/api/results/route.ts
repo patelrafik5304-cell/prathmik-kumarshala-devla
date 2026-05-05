@@ -5,14 +5,24 @@ const BATCH_LIMIT = 400;
 
 export async function GET(req: NextRequest) {
   try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const db = getAdminDb();
     const { searchParams } = new URL(req.url);
     const studentUsername = searchParams.get('studentUsername');
+    const published = searchParams.get('published');
 
     let query: any = db.collection('results');
 
     if (studentUsername) {
       query = query.where('studentUsername', '==', studentUsername);
+    }
+
+    if (published === 'true') {
+      query = query.where('published', '==', true);
     }
 
     const snapshot = await query.get();

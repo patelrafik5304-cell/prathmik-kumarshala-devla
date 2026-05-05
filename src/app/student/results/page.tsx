@@ -28,10 +28,10 @@ export default function StudentResults() {
   const [expandedExam, setExpandedExam] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/results').then((r) => r.json()).then((data) => {
+    if (!user) return;
+    fetch(`/api/results?studentUsername=${user.username}&published=true`).then((r) => r.json()).then((data) => {
       const all = Array.isArray(data) ? data : [];
-      const myResults = all.filter((r: Result) => r.studentUsername === user?.username && r.published);
-      setResults(myResults);
+      setResults(all);
     });
   }, [user]);
 
