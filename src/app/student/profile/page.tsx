@@ -14,10 +14,12 @@ export default function StudentProfile() {
 
   useEffect(() => {
     if (!user) return;
-    fetch('/api/students').then((r) => r.json()).then((data) => {
-      const all = Array.isArray(data) ? data : [];
-      const me = all.find((s: any) => s.username === user.username);
-      if (me) setStudent(me);
+    fetch(`/api/students/me?username=${user.username}`).then((r) => r.json()).then((data) => {
+      if (data.error) {
+        console.error('Failed to fetch profile:', data.error);
+        return;
+      }
+      setStudent(data);
     });
     fetch(`/api/attendance?studentUsername=${user.username}`).then((r) => r.json()).then((data) => {
       const records = Array.isArray(data) ? data : [];

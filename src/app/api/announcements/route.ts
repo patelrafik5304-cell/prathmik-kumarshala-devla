@@ -5,7 +5,21 @@ export async function GET() {
   try {
     const db = getAdminDb();
     const snapshot = await db.collection('announcements').get();
-    const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        content: data.content,
+        priority: data.priority,
+        isActive: data.isActive,
+        date: data.date,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        type: data.type,
+        createdAt: data.createdAt,
+      };
+    }).filter(item => item.isActive !== false); // Only return active announcements
     items.sort((a: any, b: any) => {
       const dateA = a.createdAt || a.date || '';
       const dateB = b.createdAt || b.date || '';
