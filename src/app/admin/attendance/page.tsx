@@ -323,7 +323,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {viewMode === 'mark' && (
+      {viewMode === 'mark' && !isHoliday && (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -371,6 +371,14 @@ export default function AttendancePage() {
               </tbody>
             </table>
           </div>
+        </Card>
+      )}
+
+      {viewMode === 'mark' && isHoliday && (
+        <Card className="p-12 text-center">
+          <AlertCircle className="w-12 h-12 text-red-300 mx-auto mb-3" />
+          <p className="text-red-600 font-medium">Attendance not available for {date}</p>
+          <p className="text-red-500 text-sm mt-1">{holidayReason}</p>
         </Card>
       )}
     </div>
