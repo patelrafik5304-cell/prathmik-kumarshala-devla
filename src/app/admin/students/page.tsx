@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check, FileDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -219,6 +219,68 @@ export default function StudentsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadStudentPDF = () => {
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const studentsToShow = filtered;
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Student Credentials</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { text-align: center; color: #1e3a8a; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #1e3a8a; color: white; padding: 10px; text-align: left; }
+          td { padding: 10px; border-bottom: 1px solid #ddd; }
+          tr:hover { background: #f5f5f5; }
+          .info { margin-bottom: 10px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <h1>Student Credentials Report</h1>
+        <p class="info">Generated on ${new Date().toLocaleDateString()}</p>
+        <p class="info">Total Students: ${studentsToShow.length}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Password</th>
+              <th>Class</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    studentsToShow.forEach(student => {
+      html += `
+        <tr>
+          <td>${student.name}</td>
+          <td>${student.username}</td>
+          <td>${student.password}</td>
+          <td>${student.class === '0' ? 'BALVATIKA' : 'Class ' + student.class}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
+
   const getClassDisplay = (cls: string) => cls === '0' ? 'BALVATIKA' : `Class ${cls}`;
 
   return (
@@ -229,6 +291,9 @@ export default function StudentsPage() {
           <p className="text-gray-500 mt-1 text-sm">Manage all student records</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="secondary" onClick={downloadStudentPDF}>
+            <FileDown className="w-4 h-4" /> Download PDF
+          </Button>
           <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }}>
             <Upload className="w-4 h-4" /> Upload CSV
           </Button>
