@@ -20,13 +20,6 @@ interface Announcement {
   type?: 'general' | 'holiday' | 'vacation';
 }
 
-interface Student {
-  id: string;
-  username: string;
-  name: string;
-  class: string;
-}
-
 function getDateRange() {
   const today = new Date();
   const fifteenDaysAgo = new Date(today);
@@ -40,6 +33,16 @@ function getDateRange() {
 function isDateValid(dateStr: string): boolean {
   const { min, max } = getDateRange();
   return dateStr >= min && dateStr <= max;
+}
+
+function checkDateRestrictions(dateStr: string): { isRestricted: boolean; reason: string } {
+  // Check if Sunday
+  const dayOfWeek = new Date(dateStr).getDay();
+  if (dayOfWeek === 0) {
+    return { isRestricted: true, reason: 'Sunday - No attendance allowed' };
+  }
+
+  return { isRestricted: false, reason: '' };
 }
 
 export default function AttendancePage() {
@@ -70,6 +73,36 @@ export default function AttendancePage() {
     const fetchSavedAttendance = async () => {
       const initial: Record<string, string> = {};
       filteredStudents.forEach((s) => { initial[s.id] = 'present'; });
+
+      // Check date restrictions (Sunday)
+      const restriction = checkDateRestrictions(date);
+      if (restriction.isRestricted) {
+        setIsHoliday(true);
+        setHolidayReason(restriction.reason);
+        setAttendance(initial);
+        return;
+      }
+
+      // Check for holiday/vacation announcements
+      try {
+        const res = await fetch('/api/announcements');
+        const announcements: Announcement[] = await res.json();
+        const holidayAnnouncement = announcements.find((a: any) =>
+          a.date === date && (a.type === 'holiday' || a.type === 'vacation')
+        );
+
+        if (holidayAnnouncement) {
+          setIsHoliday(true);
+          setHolidayReason(holidayAnnouncement.title || 'Holiday/Vacation');
+          setAttendance(initial);
+          return;
+        }
+
+        setIsHoliday(false);
+        setHolidayReason('');
+      } catch (e) {
+        console.error('Failed to check announcements', e);
+      }
 
       try {
         const res = await fetch(`/api/attendance?date=${date}`);
@@ -102,6 +135,10 @@ export default function AttendancePage() {
   const handleSubmit = async () => {
     if (!isDateValid(date)) {
       alert('You can only mark attendance for the last 15 days. Future dates are not allowed.');
+      return;
+    }
+    if (isHoliday) {
+      alert(`Cannot mark attendance for ${date}: ${holidayReason}`);
       return;
     }
     setLoading(true);
@@ -160,6 +197,13 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {isHoliday && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Cannot mark attendance for {date}: {holidayReason}</span>
+        </div>
+      )}
+
       {savedMsg && (
         <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
           <Check className="w-4 h-4" /> {savedMsg}
@@ -196,7 +240,7 @@ export default function AttendancePage() {
             </div>
           </div>
           <div className="flex items-end">
-            <Button onClick={handleSubmit} loading={loading} disabled={!dateValid || filteredStudents.length === 0} className="w-full">
+            <Button onClick={handleSubmit} loading={loading} disabled={!dateValid || filteredStudents.length === 0 || isHoliday} className="w-full">
               <Check className="w-4 h-4" /> Save Attendance
             </Button>
           </div>
@@ -294,10 +338,18 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button onClick={() => handleAttendance(student.id, 'present')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'present' ? 'bg-green-600 text-white shadow-lg shadow-green-500/25' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                        <button 
+                          onClick={() => handleAttendance(student.id, 'present')} 
+                          disabled={isHoliday}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isHoliday ? 'opacity-50 cursor-not-allowed' : attendance[student.id] === 'present' ? 'bg-green-600 text-white shadow-lg shadow-green-500/25' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}
+                        >
                           Present
                         </button>
-                        <button onClick={() => handleAttendance(student.id, 'absent')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${attendance[student.id] === 'absent' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+                        <button 
+                          onClick={() => handleAttendance(student.id, 'absent')} 
+                          disabled={isHoliday}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isHoliday ? 'opacity-50 cursor-not-allowed' : attendance[student.id] === 'absent' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                        >
                           Absent
                         </button>
                       </div>
