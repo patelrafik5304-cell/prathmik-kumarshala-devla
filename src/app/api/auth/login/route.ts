@@ -27,7 +27,16 @@ export async function POST(request: NextRequest) {
 
     if (!studentDoc.empty) {
       const studentData = studentDoc.docs[0].data();
-      const isMatch = await bcrypt.compare(password, studentData.password || '');
+      let isMatch = false;
+      
+      // Try bcrypt comparison first (for hashed passwords)
+      if (studentData.password && studentData.password.startsWith('$2')) {
+        isMatch = await bcrypt.compare(password, studentData.password);
+      } else {
+        // Fallback to plain text comparison (for existing students with unhashed passwords)
+        isMatch = studentData.password === password;
+      }
+      
       if (isMatch) {
         return NextResponse.json({
           success: true,
