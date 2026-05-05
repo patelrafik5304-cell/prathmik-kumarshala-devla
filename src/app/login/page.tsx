@@ -18,14 +18,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem('rememberedUser');
-    if (saved) {
-      try {
-        const { username: savedUser } = JSON.parse(saved);
-        setUsername(savedUser);
-        setRemember(true);
-      } catch {}
-    }
   }, []);
 
   const validate = () => {
