@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   user: { username: string; name: string; role: string; class?: string } | null;
   loading: boolean;
+  initialized: boolean;
   login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
 }
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
     }
     setLoading(false);
+    setInitialized(true);
   }, []);
 
   const login = async (username: string, password: string, remember: boolean = true) => {
@@ -52,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, initialized, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
