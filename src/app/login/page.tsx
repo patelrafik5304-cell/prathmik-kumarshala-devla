@@ -154,9 +154,13 @@ export default function LoginPage() {
                 alt="Prathmik Kumarshala"
                 className={`w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover mx-auto ${isTablet ? '' : 'premium-logo-entrance premium-logo-breathe'}`}
               />
-              <h1 className={`text-3xl font-bold tracking-tight ${isTablet ? 'text-white' : 'premium-text-gradient'}`}>
-                PRATHMIK KUMARSHALA
-              </h1>
+             <h1 className={`text-3xl font-bold tracking-tight ${isTablet ? 'text-white' : 'premium-text-gradient'}`}>
+                 {"PRATHMIK KUMARSHALA-DEVLA".split('').map((char, i) => (
+                   <span key={i} className={`inline-block ${!isTablet ? 'school-char' : ''}`} style={{ animationDelay: `${i * 0.03}s` }}>
+                     {char === ' ' ? '\u00A0' : char}
+                   </span>
+                 ))}
+               </h1>
               <p className="text-blue-200 font-medium mt-1">Management System</p>
               <p className="text-gray-300 text-sm mt-2">Sign in to your account</p>
             </div>
