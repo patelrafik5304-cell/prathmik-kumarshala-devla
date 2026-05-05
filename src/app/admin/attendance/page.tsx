@@ -51,10 +51,33 @@ export default function AttendancePage() {
   const filteredStudents = students.filter((s) => s.class === selectedClass);
 
   useEffect(() => {
-    const initial: Record<string, string> = {};
-    filteredStudents.forEach((s) => { initial[s.id] = 'present'; });
-    setAttendance(initial);
-  }, [selectedClass, filteredStudents.length]);
+    const fetchSavedAttendance = async () => {
+      const initial: Record<string, string> = {};
+      filteredStudents.forEach((s) => { initial[s.id] = 'present'; });
+
+      try {
+        const res = await fetch(`/api/attendance?date=${date}`);
+        const records = await res.json();
+
+        const savedMap: Record<string, string> = {};
+        records.forEach((r: any) => { savedMap[r.studentUsername] = r.status; });
+
+        filteredStudents.forEach((s) => {
+          if (savedMap[s.username]) {
+            initial[s.id] = savedMap[s.username];
+          }
+        });
+      } catch (e) {
+        console.error('Failed to fetch saved attendance', e);
+      }
+
+      setAttendance(initial);
+    };
+
+    if (filteredStudents.length > 0) {
+      fetchSavedAttendance();
+    }
+  }, [selectedClass, date, filteredStudents.length]);
 
   const handleAttendance = (studentId: string, status: string) => {
     setAttendance({ ...attendance, [studentId]: status });
