@@ -14,25 +14,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    const saved = localStorage.getItem('authUser');
-    if (saved) {
-      try {
-        const parsedUser = JSON.parse(saved);
-        // Only restore non-admin sessions
-        if (parsedUser.role !== 'admin') {
-          setUser(parsedUser);
-        }
-      } catch {}
+  const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('authUser');
+      if (saved) {
+        try {
+          const parsedUser = JSON.parse(saved);
+          if (parsedUser.role !== 'admin') {
+            return parsedUser;
+          }
+        } catch {}
+      }
     }
-    setLoading(false);
-    setInitialized(true);
-  }, []);
+    return null;
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(true);
+  const router = useRouter();
 
   const login = async (username: string, password: string, remember: boolean = true) => {
     const res = await fetch('/api/auth/login', {
