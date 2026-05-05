@@ -65,7 +65,7 @@ export default function LoginPage() {
               alt="Prathmik Kumarshala"
               className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover mx-auto logo-breathe"
             />
-            <h1 className="text-3xl font-bold text-white tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight title-gradient">
               PRATHMIK KUMARSHALA-DEVLA
             </h1>
             <p className="text-blue-200 font-medium mt-1">Management System</p>
