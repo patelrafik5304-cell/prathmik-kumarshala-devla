@@ -55,7 +55,6 @@ export default function StaffAttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState<{ id: string; name: string; class: string }[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isHoliday, setIsHoliday] = useState(false);
   const [holidayReason, setHolidayReason] = useState('');
 
@@ -68,16 +67,16 @@ export default function StaffAttendancePage() {
           setSelectedClass(data[0].class);
         }
       });
-
-    fetch('/api/announcements')
-      .then((r) => r.json())
-      .then((data) => setAnnouncements(Array.isArray(data) ? data : []));
   }, []);
 
   const classes = [...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0));
 
   const fetchAttendance = async () => {
     setLoading(true);
+    
+    // Fetch announcements fresh each time
+    const annRes = await fetch('/api/announcements');
+    const announcements = await annRes.json();
     
     // Check date restrictions
     const restriction = checkDateRestrictions(date, announcements);
