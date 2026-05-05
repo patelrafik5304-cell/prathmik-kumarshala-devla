@@ -13,6 +13,20 @@ interface Student {
   class: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  date: string;
+  type?: 'general' | 'holiday' | 'vacation';
+}
+
+interface Student {
+  id: string;
+  username: string;
+  name: string;
+  class: string;
+}
+
 function getDateRange() {
   const today = new Date();
   const fifteenDaysAgo = new Date(today);
@@ -39,6 +53,8 @@ export default function AttendancePage() {
   const [viewMode, setViewMode] = useState<'mark' | 'view-absent'>('mark');
   const [absentStudents, setAbsentStudents] = useState<any[]>([]);
   const [loadingAbsent, setLoadingAbsent] = useState(false);
+  const [isHoliday, setIsHoliday] = useState(false);
+  const [holidayReason, setHolidayReason] = useState('');
 
   useEffect(() => {
     fetch('/api/students').then((r) => r.json()).then((data) => {

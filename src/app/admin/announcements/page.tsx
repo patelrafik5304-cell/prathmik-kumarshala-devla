@@ -15,6 +15,7 @@ interface Announcement {
   priority: 'low' | 'medium' | 'high';
   isActive: boolean;
   date: string;
+  type?: 'general' | 'holiday' | 'vacation';
 }
 
 export default function AnnouncementsPage() {
@@ -22,7 +23,7 @@ export default function AnnouncementsPage() {
   const isAdmin = user?.role === 'admin';
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '', priority: 'medium' });
+  const [form, setForm] = useState({ title: '', content: '', priority: 'medium', type: 'general' });
   const [editingItem, setEditingItem] = useState<Announcement | null>(null);
 
   useEffect(() => {
@@ -40,13 +41,13 @@ export default function AnnouncementsPage() {
       await fetch('/api/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, date: new Date().toISOString().split('T')[0], isActive: true }) });
     }
     setShowModal(false);
-    setForm({ title: '', content: '', priority: 'medium' });
+    setForm({ title: '', content: '', priority: 'medium', type: 'general' });
     refetch();
   };
 
   const handleEdit = (item: Announcement) => {
     setEditingItem(item);
-    setForm({ title: item.title, content: item.content, priority: item.priority });
+    setForm({ title: item.title, content: item.content, priority: item.priority, type: item.type || 'general' });
     setShowModal(true);
   };
 
@@ -113,12 +114,13 @@ export default function AnnouncementsPage() {
         )}
       </div>
 
-      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium' }); }} title={editingItem ? 'Edit Announcement' : 'New Announcement'}>
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general' }); }} title={editingItem ? 'Edit Announcement' : 'New Announcement'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Title</label><input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" required /></div>
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Content</label><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" rows={3} required /></div>
+          <div><label className="block text-sm font-semibold text-gray-700 mb-2">Type</label><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white"><option value="general">General Notice</option><option value="holiday">Holiday</option><option value="vacation">Vacation</option></select></div>
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label><select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as any })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
-          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">{editingItem ? 'Update' : 'Publish'}</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium' }); }}>Cancel</Button></div>
+          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">{editingItem ? 'Update' : 'Publish'}</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general' }); }}>Cancel</Button></div>
         </form>
       </Modal>
     </div>
