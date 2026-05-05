@@ -119,7 +119,7 @@ export default function AnnouncementsPage() {
         )}
       </div>
 
-      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general' }); }} title={editingItem ? 'Edit Announcement' : 'New Announcement'}>
+      <Modal open={showModal} onClose={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general', startDate: '', endDate: '' }); }} title={editingItem ? 'Edit Announcement' : 'New Announcement'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Title</label><input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" required /></div>
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Content</label><textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" rows={3} required /></div>
