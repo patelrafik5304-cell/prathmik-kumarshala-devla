@@ -44,7 +44,9 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
   const title = role === 'admin' ? 'Admin Panel' : 'Student Portal';
 
   const handleLogout = () => {
-    logout();
+    if (window.confirm('Are you sure you want to logout?')) {
+      logout();
+    }
   };
 
   return (

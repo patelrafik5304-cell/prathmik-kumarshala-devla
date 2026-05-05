@@ -25,8 +25,10 @@ export default function TopBar({ title, onMenuToggle }: TopBarProps) {
   }, []);
 
   const handleLogout = () => {
-    setDropdownOpen(false);
-    logout();
+    if (window.confirm('Are you sure you want to logout?')) {
+      setDropdownOpen(false);
+      logout();
+    }
   };
 
   return (
