@@ -112,24 +112,32 @@ export default function LoginPage() {
   return (
     <div className={`min-h-screen relative overflow-hidden ${isTablet ? 'bg-[#1e3a5f]' : 'edge-bg-layer'} ${isTablet ? 'prevent-flicker' : ''}`}>
 
-      {/* Edge-based animated background - only outside safe zone */}
-      {!isTablet && (
-        <>
-          {/* Gradient overlay with mask to protect center */}
-          <div className="edge-gradient-overlay" />
+       {/* Edge-based animated background - only outside safe zone */}
+       {!isTablet && (
+         <>
+           {/* Gradient overlay with mask to protect center */}
+           <div className="edge-gradient-overlay" />
 
-          {/* Blurred blobs positioned at edges only */}
-          <div className="blob blob-1" />
-          <div className="blob blob-2" />
-          <div className="blob blob-3" />
-          <div className="blob blob-4" />
-          <div className="blob blob-5" />
-          <div className="blob blob-6" />
+           {/* Blurred blobs positioned at edges only */}
+           <div className="blob blob-1" />
+           <div className="blob blob-2" />
+           <div className="blob blob-3" />
+           <div className="blob blob-4" />
+           <div className="blob blob-5" />
+           <div className="blob blob-6" />
+           <div className="blob blob-7" />
+           <div className="blob blob-8" />
 
-          {/* Vignette to darken edges and focus center */}
-          <div className="vignette-overlay" />
-        </>
-      )}
+           {/* Animated light waves along edges */}
+           <div className="light-wave light-wave-top" />
+           <div className="light-wave light-wave-bottom" />
+           <div className="light-wave light-wave-left" />
+           <div className="light-wave light-wave-right" />
+
+           {/* Vignette to darken edges and focus center */}
+           <div className="vignette-overlay" />
+         </>
+       )}
 
       {/* Login Card - Safe Zone (no background animation affects this) */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
