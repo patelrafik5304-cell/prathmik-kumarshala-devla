@@ -292,7 +292,7 @@ export default function StudentsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={downloadStudentPDF} className="flex-1 sm:flex-none justify-center">
-            <FileDown className="w-4 h-4" /> Download PDF
+            <FileDown className="w-4 h-4" /> Download List PDF
           </Button>
           <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 sm:flex-none justify-center">
             <Upload className="w-4 h-4" /> Upload CSV
