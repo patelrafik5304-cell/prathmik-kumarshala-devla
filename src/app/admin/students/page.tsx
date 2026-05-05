@@ -285,19 +285,19 @@ export default function StudentsPage() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-8">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">Students Management</h1>
           <p className="text-gray-500 mt-1 text-sm">Manage all student records</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={downloadStudentPDF}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={downloadStudentPDF} className="flex-1 sm:flex-none justify-center">
             <FileDown className="w-4 h-4" /> Download PDF
           </Button>
-          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }}>
+          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 sm:flex-none justify-center">
             <Upload className="w-4 h-4" /> Upload CSV
           </Button>
-          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }}>
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="flex-1 sm:flex-none justify-center">
             <Plus className="w-4 h-4" /> Add Student
           </Button>
         </div>
