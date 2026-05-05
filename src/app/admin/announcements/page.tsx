@@ -129,7 +129,7 @@ export default function AnnouncementsPage() {
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">End Date</label><input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all" /></div>
           </div>
           <div><label className="block text-sm font-semibold text-gray-700 mb-2">Priority</label><select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as any })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
-          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">{editingItem ? 'Update' : 'Publish'}</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general' }); }}>Cancel</Button></div>
+          <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">{editingItem ? 'Update' : 'Publish'}</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setEditingItem(null); setForm({ title: '', content: '', priority: 'medium', type: 'general', startDate: '', endDate: '' }); }}>Cancel</Button></div>
         </form>
       </Modal>
     </div>
