@@ -51,13 +51,24 @@ export default function AnnouncementsPage() {
   };
 
   const toggleActive = async (item: Announcement) => {
-    await fetch('/api/announcements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, isActive: !item.isActive }) });
-    setAnnouncements(announcements.map((a) => (a.id === item.id ? { ...a, isActive: !a.isActive } : a)));
+    // Optimistic update
+    setAnnouncements(prev => prev.map(a => a.id === item.id ? { ...a, isActive: !a.isActive } : a));
+    try {
+      await fetch('/api/announcements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: item.id, isActive: !item.isActive }) });
+    } catch (err) {
+      // Revert on error
+      setAnnouncements(prev => prev.map(a => a.id === item.id ? { ...a, isActive: item.isActive } : a));
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
-    setAnnouncements(announcements.filter((a) => a.id !== id));
+    // Optimistic update
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+    try {
+      await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
+    } catch (err) {
+      refetch(); // Revert on error
+    }
   };
 
   return (

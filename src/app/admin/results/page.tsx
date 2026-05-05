@@ -146,15 +146,19 @@ export default function ResultsPage() {
   const handleDelete = async () => {
     if (!resultToDelete) return;
     setActionLoading(true);
+    const deletedId = resultToDelete.id;
+    // Optimistic update
+    setResults(prev => prev.filter((r) => r.id !== deletedId));
+    setShowDeleteModal(false);
+    setResultToDelete(null);
     try {
-      const res = await fetch(`/api/results?id=${resultToDelete.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (res.ok) {
-        setResults((prev) => prev.filter((r) => r.id !== resultToDelete.id));
-        setShowDeleteModal(false);
-        setResultToDelete(null);
-      } else { alert('Delete failed: ' + (data.error || 'Unknown error')); }
-    } catch (err: any) { alert('Delete failed: ' + err.message); }
+      await fetch(`/api/results?id=${deletedId}`, { method: 'DELETE' });
+    } catch (err) {
+      // Revert on error
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    }
     setActionLoading(false);
   };
 
@@ -164,13 +168,18 @@ export default function ResultsPage() {
   };
 
   const handleTogglePublish = async (id: string, current: boolean) => {
+    // Optimistic update
+    setResults(prev => prev.map((r) => r.id === id ? { ...r, published: !current } : r));
     try {
       const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, published: !current }) });
-      const data = await res.json();
-      if (res.ok) {
-        setResults((prev) => prev.map((r) => r.id === id ? { ...r, published: !current } : r));
-      } else { alert('Publish failed: ' + (data.error || 'Unknown error')); }
-    } catch (err: any) { alert('Publish failed: ' + err.message); }
+      if (!res.ok) {
+        // Revert on error
+        setResults(prev => prev.map((r) => r.id === id ? { ...r, published: current } : r));
+      }
+    } catch (err) {
+      // Revert on error
+      setResults(prev => prev.map((r) => r.id === id ? { ...r, published: current } : r));
+    }
   };
 
   const openEdit = (result: Result) => {

@@ -48,8 +48,13 @@ export default function GalleryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
-    setImages(images.filter((i) => i._id !== id));
+    // Optimistic update - remove immediately
+    setImages(prev => prev.filter((i) => i._id !== id));
+    try {
+      await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
+    } catch (err) {
+      refetch(); // Revert on error
+    }
   };
 
   const categories = ['all', ...new Set(images.map((i) => i.category))];
