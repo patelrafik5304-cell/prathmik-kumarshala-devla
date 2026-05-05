@@ -15,20 +15,23 @@ const navItems = [
 ];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      if (user.role !== 'staff' && user.role !== 'admin') {
+        router.push('/login');
+      }
     }
-    if (user.role !== 'staff' && user.role !== 'admin') {
-      router.push('/login');
-    }
-  }, [user, router]);
+  }, [loading, user, router]);
 
+  if (loading) return null;
   if (!user || (user.role !== 'staff' && user.role !== 'admin')) return null;
 
   return (

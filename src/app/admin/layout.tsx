@@ -11,11 +11,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.push('/login');
-    else if (!loading && user?.role !== 'admin') router.push('/student');
+    if (!loading) {
+      if (!user) router.push('/login');
+      else if (user?.role !== 'admin') router.push('/student');
+    }
   }, [loading, user, router]);
 
-  if (loading || !user || user.role !== 'admin') return null;
+  if (loading) return null;
+  if (!user || user.role !== 'admin') return null;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex">
