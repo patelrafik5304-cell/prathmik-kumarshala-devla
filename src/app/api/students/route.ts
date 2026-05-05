@@ -111,25 +111,87 @@ export async function DELETE(req: NextRequest) {
     const auth = getAdminAuth();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    const className = searchParams.get('class');
 
-    const doc = await db.collection('students').doc(id).get();
-    if (!doc.exists) {
-      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
-    }
-
-    const email = doc.data()?.email;
-    if (email) {
-      try {
-        const user = await auth.getUserByEmail(email);
-        await auth.deleteUser(user.uid);
-      } catch (e: any) {
-        console.log('[Students DELETE] Auth delete skipped:', e.message);
+    // SINGLE DELETE
+    if (id) {
+      const doc = await db.collection('students').doc(id).get();
+      if (!doc.exists) {
+        return NextResponse.json({ error: 'Student not found' }, { status: 404 });
       }
+
+      const email = doc.data()?.email;
+      if (email) {
+        try {
+          const user = await auth.getUserByEmail(email);
+          await auth.deleteUser(user.uid);
+        } catch (e: any) {
+          console.log('[Students DELETE] Auth delete skipped:', e.message);
+        }
+      }
+
+      await db.collection('students').doc(id).delete();
+      return NextResponse.json({ success: true });
     }
 
-    await db.collection('students').doc(id).delete();
-    return NextResponse.json({ success: true });
+    // BULK DELETE BY CLASS
+    if (className) {
+      const snapshot = await db.collection('students').where('class', '==', className).get();
+      if (snapshot.empty) {
+        return NextResponse.json({ error: 'No students found in this class' }, { status: 404 });
+      }
+
+      const batch = db.batch();
+      const authDeletes: Promise<any>[] = [];
+
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        if (data.email) {
+          try {
+            authDeletes.push(
+              auth.getUserByEmail(data.email).then((user) => auth.deleteUser(user.uid))
+            );
+          } catch (e: any) {
+            console.log('[Bulk Delete] Auth delete skipped:', e.message);
+          }
+        }
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      await Promise.allSettled(authDeletes);
+
+      // CASCADE: Delete attendance records for this class
+      const attendanceSnapshot = await db.collection('attendance')
+        .where('class', '==', className)
+        .get();
+      if (!attendanceSnapshot.empty) {
+        const attendanceBatch = db.batch();
+        attendanceSnapshot.docs.forEach((doc) => attendanceBatch.delete(doc.ref));
+        await attendanceBatch.commit();
+      }
+
+      // CASCADE: Delete results records for this class
+      const resultsSnapshot = await db.collection('results')
+        .where('class', '==', className)
+        .get();
+      if (!resultsSnapshot.empty) {
+        const resultsBatch = db.batch();
+        resultsSnapshot.docs.forEach((doc) => resultsBatch.delete(doc.ref));
+        await resultsBatch.commit();
+      }
+
+      const displayClass = className === '0' ? 'BALVATIKA' : `Class ${className}`;
+
+      return NextResponse.json({
+        success: true,
+        deletedCount: snapshot.size,
+        className,
+        message: `Deleted ${snapshot.size} students from ${displayClass}`,
+      });
+    }
+
+    return NextResponse.json({ error: 'Missing id or class parameter' }, { status: 400 });
   } catch (e: any) {
     console.error('[Students DELETE] Error:', e);
     return NextResponse.json({ error: e.message || 'Failed to delete' }, { status: 500 });

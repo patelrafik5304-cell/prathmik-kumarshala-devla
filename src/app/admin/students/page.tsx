@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -46,6 +46,10 @@ export default function StudentsPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[] } | null>(null);
+  const [bulkDeleteClass, setBulkDeleteClass] = useState('');
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
+  const [savedMsg, setSavedMsg] = useState('');
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,6 +108,27 @@ export default function StudentsPage() {
   const openDeleteModal = (student: Student) => {
     setStudentToDelete(student);
     setShowDeleteModal(true);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!bulkDeleteClass) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/students?class=${bulkDeleteClass}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setBulkDeleteCount(data.deletedCount);
+        const displayClass = bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`;
+        setSavedMsg(`Deleted ${data.deletedCount} students from ${displayClass}`);
+        fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
+        setTimeout(() => setSavedMsg(''), 5000);
+      }
+    } catch (e) {
+      console.error('Bulk delete failed', e);
+    }
+    setLoading(false);
+    setShowBulkDeleteModal(false);
+    setBulkDeleteClass('');
   };
 
   const parseCsv = (text: string): CsvRow[] => {
@@ -236,6 +261,46 @@ export default function StudentsPage() {
           </select>
         </div>
       </Card>
+
+      {isAdmin && (
+        <Card className="p-6 mb-6 border-2 border-red-200 bg-red-50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-800">Danger Zone</h3>
+              <p className="text-sm text-red-600 mt-1">Bulk delete all students from a selected class. This will also delete all attendance and result records for these students.</p>
+            </div>
+            <div className="flex gap-3 items-end">
+              <div>
+                <select
+                  value={bulkDeleteClass}
+                  onChange={(e) => setBulkDeleteClass(e.target.value)}
+                  className="px-4 py-2.5 border-2 border-red-300 rounded-xl outline-none focus:border-red-500 bg-white"
+                >
+                  <option value="">Select Class</option>
+                  <option value="0">BALVATIKA</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((c) => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                </select>
+              </div>
+              <Button
+                variant="primary"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={!bulkDeleteClass}
+                onClick={() => setShowBulkDeleteModal(true)}
+              >
+                Delete All Students of This Class
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {savedMsg && (
+        <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
+          <Check className="w-4 h-4" /> {savedMsg}
+        </div>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -448,6 +513,24 @@ export default function StudentsPage() {
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>Yes</Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={showBulkDeleteModal} onClose={() => setShowBulkDeleteModal(false)} title="Confirm Bulk Delete">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete ALL students from</p>
+          <p className="font-semibold text-gray-800 mb-2">
+            {bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`}
+          </p>
+          <p className="text-sm text-red-600 mb-2">This will also delete all attendance and result records for these students.</p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleBulkDelete}>Yes, Delete All</Button>
           </div>
         </div>
       </Modal>
