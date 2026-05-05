@@ -24,13 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (saved) {
       try {
         const parsedUser = JSON.parse(saved);
-        // Do not restore admin session from localStorage - admin must login each time
+        // Only restore non-admin sessions
         if (parsedUser.role !== 'admin') {
           setUser(parsedUser);
         }
       } catch {}
     }
     setLoading(false);
+    setInitialized(true);
   }, []);
 
   const login = async (username: string, password: string, remember: boolean = true) => {
@@ -44,10 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const userObj = { username: data.username, name: data.name || 'Admin', role: data.role, class: data.class || '' };
     setUser(userObj);
-    if (remember) {
+    if (remember && data.role !== 'admin') {
       localStorage.setItem('authUser', JSON.stringify(userObj));
     }
-    router.push(data.role === 'admin' ? '/admin' : '/student');
+    router.push(data.role === 'admin' ? '/admin' : data.role === 'staff' ? '/staff' : '/student');
   };
 
   const logout = () => {
