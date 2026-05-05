@@ -19,6 +19,8 @@ interface Announcement {
   title: string;
   date: string;
   type?: 'general' | 'holiday' | 'vacation';
+  startDate?: string;
+  endDate?: string;
 }
 
 function checkDateRestrictions(dateStr: string, announcements: Announcement[]): { isRestricted: boolean; reason: string } {
@@ -28,10 +30,17 @@ function checkDateRestrictions(dateStr: string, announcements: Announcement[]): 
     return { isRestricted: true, reason: 'Sunday - No attendance recorded' };
   }
 
-  // Check for holiday/vacation announcements
-  const holidayAnnouncement = announcements.find((a) =>
-    a.date === dateStr && (a.type === 'holiday' || a.type === 'vacation')
-  );
+  // Check for holiday/vacation announcements with date range
+  const holidayAnnouncement = announcements.find((a) => {
+    if (a.type !== 'holiday' && a.type !== 'vacation') return false;
+    
+    // Check if date falls within the range
+    if (a.startDate && a.endDate) {
+      return dateStr >= a.startDate && dateStr <= a.endDate;
+    }
+    // Fallback to single date check
+    return a.date === dateStr;
+  });
 
   if (holidayAnnouncement) {
     return { isRestricted: true, reason: holidayAnnouncement.title || 'Holiday/Vacation' };
