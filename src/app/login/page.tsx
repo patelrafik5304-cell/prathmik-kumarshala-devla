@@ -158,7 +158,7 @@ export default function LoginPage() {
                  {"PRATHMIK KUMARSHALA-DEVLA".split('').map((char, i) => (
                    <span
                      key={i}
-                     className={`inline-block ${isTablet ? 'text-white' : 'school-char'}`}
+                     className={`inline-block ${isTablet ? 'text-white' : 'char-gradient'}`}
                      style={{ animationDelay: `${i * 0.03}s` }}
                    >
                      {char === ' ' ? '\u00A0' : char}
