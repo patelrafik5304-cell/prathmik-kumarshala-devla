@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import bcrypt from 'bcryptjs';
 
 function generateStudentId(count: number): string {
   return `STU${String(count).padStart(4, '0')}`;
@@ -24,11 +25,12 @@ async function createStudentUser(name: string, count: number) {
   const auth = getAdminAuth();
   const username = generateUsername(name, count);
   const password = generatePassword();
+  const hashedPassword = await bcrypt.hash(password, 10);
   const email = `${username}@school.com`;
   await auth.createUser({ email, password, displayName: name });
   const userRecord = await auth.getUserByEmail(email);
   await auth.setCustomUserClaims(userRecord.uid, { role: 'student', username });
-  return { username, password, email };
+  return { username, password, hashedPassword, email };
 }
 
 async function getCount(): Promise<number> {
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest) {
     const count = await getCount();
     const countNum = count + 1;
     const studentId = generateStudentId(countNum);
-    const { username, password, email } = await createStudentUser(body.name, countNum);
+    const { username, password, hashedPassword, email } = await createStudentUser(body.name, countNum);
     const docRef = await db.collection('students').add({
       studentId,
       childUid: body.childUid,
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest) {
       class: body.class,
       username,
       email,
-      password,
+      password: hashedPassword,
       photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });
@@ -98,6 +100,9 @@ export async function PUT(req: NextRequest) {
   try {
     const db = getAdminDb();
     const { id, ...data } = await req.json();
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
     await db.collection('students').doc(id).update(data);
     return NextResponse.json({ success: true });
   } catch (e) {

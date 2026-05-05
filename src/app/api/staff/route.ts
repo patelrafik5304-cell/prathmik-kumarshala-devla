@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import bcrypt from 'bcryptjs';
 
 export async function GET() {
   try {
     const db = getAdminDb();
     const snapshot = await db.collection('staff').get();
-    const items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Don't return password in GET
+      const { password, ...safeData } = data;
+      return { ...safeData, id: doc.id };
+    });
     items.sort((a: any, b: any) => {
       const dateA = (a as any).createdAt || '';
       const dateB = (b as any).createdAt || '';
@@ -24,6 +30,12 @@ export async function POST(req: NextRequest) {
   try {
     const db = getAdminDb();
     const body = await req.json();
+    
+    // Hash password if provided
+    if (body.password) {
+      body.password = await bcrypt.hash(body.password, 10);
+    }
+    
     const docRef = await db.collection('staff').add({
       ...body,
       createdAt: new Date().toISOString(),
@@ -38,6 +50,12 @@ export async function PUT(req: NextRequest) {
   try {
     const db = getAdminDb();
     const { id, ...data } = await req.json();
+    
+    // Hash password if provided
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
+    
     await db.collection('staff').doc(id).update(data);
     return NextResponse.json({ success: true });
   } catch (e) {

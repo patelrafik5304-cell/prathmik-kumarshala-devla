@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import bcrypt from 'bcryptjs';
 
 function generateStudentId(count: number): string {
   return `STU${String(count).padStart(4, '0')}`;
@@ -17,6 +18,12 @@ function generatePassword(): string {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return password;
+}
+
+function generateHashedPassword(): { plain: string; hashed: string } {
+  const plain = generatePassword();
+  const hashed = bcrypt.hashSync(plain, 10);
+  return { plain, hashed };
 }
 
 export async function POST(req: NextRequest) {
@@ -47,13 +54,13 @@ export async function POST(req: NextRequest) {
         currentCount++;
         const studentId = generateStudentId(currentCount);
         const username = generateUsername(trimmedName, currentCount);
-        const password = generatePassword();
+        const { plain, hashed } = generateHashedPassword();
         const email = `${username}@school.com`;
-
-        await auth.createUser({ email, password, displayName: trimmedName });
+        
+        await auth.createUser({ email, password: plain, displayName: trimmedName });
         const userRecord = await auth.getUserByEmail(email);
         await auth.setCustomUserClaims(userRecord.uid, { role: 'student', username });
-
+        
         await db.collection('students').add({
           studentId,
           childUid: trimmedChildUid,
@@ -61,11 +68,11 @@ export async function POST(req: NextRequest) {
           class: trimmedClass,
           username,
           email,
-          password,
+          password: hashed,
           photo: '',
           createdAt: new Date().toISOString(),
         });
-
+        
         results.push({ success: true, name: trimmedName, childUid: trimmedChildUid });
       } catch (e: any) {
         results.push({ success: false, name: trimmedName, childUid: trimmedChildUid, error: e.message || 'Failed to create' });

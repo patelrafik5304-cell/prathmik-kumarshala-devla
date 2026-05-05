@@ -67,7 +67,7 @@ export default function StudentDashboard() {
         const all = Array.isArray(data) ? data : [];
         const myAttendance = all.filter((a: any) => a.studentUsername === user?.username);
         if (myAttendance.length > 0) {
-          const present = myAttendance.filter((a: any) => a.status === 'Present').length;
+          const present = myAttendance.filter((a: any) => a.status === 'present').length;
           setAttendancePct(Math.round((present / myAttendance.length) * 100));
         }
       });

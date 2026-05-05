@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,37 +10,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
-    if (username === 'admin' && password === 'admin123') {
+    if (username === '242105010083' && password === '10083') {
       return NextResponse.json({
         success: true,
         role: 'admin',
-        username: 'admin',
+        username: '242105010083',
       });
     }
 
     const db = getAdminDb();
+
+    // Check student
     const studentDoc = await db.collection('students')
       .where('username', '==', username)
       .get();
 
-    if (studentDoc.empty) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (!studentDoc.empty) {
+      const studentData = studentDoc.docs[0].data();
+      const isMatch = await bcrypt.compare(password, studentData.password || '');
+      if (isMatch) {
+        return NextResponse.json({
+          success: true,
+          role: 'student',
+          username: studentData.username,
+          name: studentData.name,
+          class: studentData.class,
+        });
+      }
     }
 
-    const studentData = studentDoc.docs[0].data();
+    // Check staff
+    const staffDoc = await db.collection('staff')
+      .where('username', '==', username)
+      .get();
 
-    if (studentData.password !== password) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    if (!staffDoc.empty) {
+      const staffData = staffDoc.docs[0].data();
+      const isMatch = await bcrypt.compare(password, staffData.password || '');
+      if (isMatch) {
+        return NextResponse.json({
+          success: true,
+          role: 'staff',
+          username: staffData.username,
+          name: staffData.name,
+        });
+      }
     }
 
-    return NextResponse.json({
-      success: true,
-      role: 'student',
-      username: studentData.username,
-      name: studentData.name,
-      class: studentData.class,
-    });
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   } catch (error: any) {
+    console.error('Login error:', error);
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }
