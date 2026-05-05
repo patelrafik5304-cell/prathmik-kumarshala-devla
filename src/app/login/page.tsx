@@ -18,6 +18,15 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('authUser');
+    if (saved) {
+      try {
+        const parsedUser = JSON.parse(saved);
+        if (parsedUser?.role) {
+          router.push(parsedUser.role === 'admin' ? '/admin' : parsedUser.role === 'staff' ? '/staff' : '/student');
+        }
+      } catch {}
+    }
   }, []);
 
   const validate = () => {

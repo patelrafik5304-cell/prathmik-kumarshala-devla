@@ -14,24 +14,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('authUser');
-      if (saved) {
-        try {
-          const parsedUser = JSON.parse(saved);
-          if (parsedUser.role !== 'admin') {
-            return parsedUser;
-          }
-        } catch {}
-      }
-    }
-    return null;
-  });
-
+  const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setInitialized(true);
+  }, []);
+
+  const autoLogin = (userObj: { username: string; name: string; role: string; class?: string }) => {
+    setUser(userObj);
+    router.push(userObj.role === 'admin' ? '/admin' : userObj.role === 'staff' ? '/staff' : '/student');
+  };
 
   const login = async (username: string, password: string, remember: boolean = true) => {
     const res = await fetch('/api/auth/login', {
@@ -58,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, initialized, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, initialized, login, logout, autoLogin }}>
       {children}
     </AuthContext.Provider>
   );
