@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -61,6 +61,19 @@ export default function LoginPage() {
   const { login } = useAuth();
   const isTablet = useIsTablet();
 
+  const handleRipple = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (isTablet) return;
+    const button = e.currentTarget;
+    const ripple = document.createElement('span');
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+    ripple.style.cssText = `position:absolute;width:${size}px;height:${size}px;top:${y}px;left:${x}px;border-radius:50%;background:rgba(255,255,255,0.4);transform:scale(0);animation:ripple 0.6s linear;pointer-events:none;`;
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }, [isTablet]);
+
   useEffect(() => {
     const saved = localStorage.getItem('rememberedUser');
     if (saved) {
@@ -102,13 +115,13 @@ export default function LoginPage() {
   };
 
 return (
-    <div className={`min-h-screen flex items-center justify-center ${isTablet ? 'bg-blue-800' : 'bg-gradient-to-br from-blue-900 via-blue-700 to-blue-400'} ${isTablet ? 'prevent-flicker' : ''}`} style={isTablet ? { backgroundColor: '#1e3a5f' } : {}}>
+    <div className={`min-h-screen flex items-center justify-center ${isTablet ? 'bg-blue-800' : 'animated-gradient-bg'} ${isTablet ? 'prevent-flicker' : ''} ${!isTablet ? "bg-[linear-gradient(135deg,#1e3a8a,#1e40af,#1e3a5f,#1e40af)]" : ''}`} style={isTablet ? { backgroundColor: '#1e3a5f' } : { backgroundSize: '400% 400%' }}>
        {/* Login Card */}
-       <div className="relative z-10 w-full max-w-md mx-4">
+       <div className={`relative z-10 w-full max-w-md mx-4 ${isTablet ? '' : 'login-card-entrance'}`}>
            {/* Logo & Title */}
-           <div className="text-center mb-8">
-             <img src="/logo.jpeg" alt="Prathmik Kumarshala" className={`w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover ${isTablet ? '' : 'transition-transform duration-300 hover:scale-105 hover:rotate-2'}`} />
-             <h1 className={`text-3xl font-bold tracking-tight text-white ${isTablet ? '' : 'text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-amber-500 animate-gradient-text'}`}>PRATHMIK KUMARSHALA</h1>
+           <div className="text-center mb-8 stagger-children">
+             <img src="/logo.jpeg" alt="Prathmik Kumarshala" className={`w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover ${isTablet ? '' : 'logo-breathe'}`} />
+             <h1 className={`text-3xl font-bold tracking-tight ${isTablet ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-amber-500 animate-gradient-text'}`}>PRATHMIK KUMARSHALA</h1>
              <p className="text-blue-200 font-medium mt-1">Management System</p>
              <p className="text-gray-300 text-sm mt-2">Sign in to your account</p>
            </div>
@@ -127,7 +140,7 @@ return (
             {/* Username Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Username</label>
-              <div className="relative">
+              <div className="relative input-icon-focus">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -137,7 +150,7 @@ return (
                    type="text"
                    value={username}
                    onChange={(e) => { setUsername(e.target.value); setFieldErrors((prev) => ({ ...prev, username: undefined })); }}
-                   className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300'} bg-gray-50/50 ${
+                   className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300 input-focus-glow'} bg-gray-50/50 ${
                      fieldErrors.username
                        ? 'border-red-400 focus:border-red-500'
                        : 'border-gray-200 focus:border-blue-500'
@@ -154,7 +167,7 @@ return (
             {/* Password Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-              <div className="relative">
+              <div className="relative input-icon-focus">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -164,7 +177,7 @@ return (
                    type={showPassword ? 'text' : 'password'}
                    value={password}
                    onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
-                   className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300'} bg-gray-50/50 ${
+                   className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300 input-focus-glow'} bg-gray-50/50 ${
                      fieldErrors.password
                        ? 'border-red-400 focus:border-red-500'
                        : 'border-gray-200 focus:border-blue-500'
@@ -175,7 +188,7 @@ return (
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  className={`absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 ${isTablet ? '' : 'eye-toggle-spin'}`}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +217,7 @@ return (
                     onChange={(e) => setRemember(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all duration-200 flex items-center justify-center">
+                  <div className={`w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all duration-200 flex items-center justify-center ${remember && !isTablet ? 'checkbox-check' : ''}`}>
                     {remember && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -220,7 +233,8 @@ return (
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3.5 rounded-xl font-semibold text-base ${isTablet ? '' : 'hover:from-amber-600 hover:to-orange-600 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30'} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2`}
+              onClick={handleRipple}
+              className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3.5 rounded-xl font-semibold text-base ${isTablet ? '' : 'button-with-sweep hover:from-amber-600 hover:to-orange-600 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 relative overflow-hidden'} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2`}
             >
               {loading ? (
                 <>
