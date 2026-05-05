@@ -6,18 +6,16 @@ import { useEffect, useState } from 'react';
 import Sidebar from '@/components/ui/Sidebar';
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isLoggedIn = user;
-
   useEffect(() => {
-    if (!isLoggedIn) router.push('/login');
-    else if (user.role === 'admin') router.push('/admin');
-  }, [isLoggedIn, user, router]);
+    if (!loading && !user) router.push('/login');
+    else if (!loading && user?.role === 'admin') router.push('/admin');
+  }, [loading, user, router]);
 
-  if (!isLoggedIn || user.role === 'admin') return null;
+  if (loading || !user || user.role === 'admin') return null;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex">
