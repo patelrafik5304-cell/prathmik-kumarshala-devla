@@ -460,10 +460,25 @@ export default function ResultsPage() {
       </div>
 
       <Card className="p-4 mb-6">
-        <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Class</label>
-        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
-          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${formatClass(c)}`}</option>))}
-        </select>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Class</label>
+            <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
+              {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${formatClass(c)}`}</option>))}
+            </select>
+          </div>
+          {isAdmin && (
+            <div className="flex items-end">
+              <Button
+                variant="secondary"
+                className="w-full sm:w-auto bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200"
+                onClick={() => openSubjectSettings(filterClass === 'all' ? '' : filterClass)}
+              >
+                <Settings className="w-4 h-4" /> Subjects
+              </Button>
+            </div>
+          )}
+        </div>
       </Card>
 
       {isAdmin && (
@@ -474,13 +489,6 @@ export default function ResultsPage() {
               <p className="text-sm text-blue-600 mt-1">Publish, unpublish, or delete all results in the selected class</p>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                className="bg-white hover:bg-gray-50 text-gray-700"
-                onClick={() => openSubjectSettings(filterClass === 'all' ? '' : filterClass)}
-              >
-                <Settings className="w-4 h-4" /> Subjects
-              </Button>
               <Button
                 variant="primary"
                 className="bg-green-600 hover:bg-green-700 text-white"
