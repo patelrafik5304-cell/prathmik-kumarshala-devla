@@ -10,6 +10,19 @@ export async function GET(req: NextRequest) {
 
     console.log('[Attendance GET] studentUsername:', studentUsername, 'date:', date);
 
+    // Fetch holiday/vacation ranges
+    const announcementsSnapshot = await db.collection('announcements')
+      .where('type', 'in', ['holiday', 'vacation'])
+      .get();
+    
+    const holidayRanges = announcementsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        startDate: data.startDate || data.date,
+        endDate: data.endDate || data.date
+      };
+    }).filter(range => range.startDate && range.endDate);
+
     let query: any = db.collection('attendance');
 
     if (studentUsername) {
@@ -20,7 +33,15 @@ export async function GET(req: NextRequest) {
     }
 
     const snapshot = await query.get();
-    const records = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+    let records = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+
+    // Filter out records that fall within holiday/vacation periods
+    records = records.filter((record: any) => {
+      const recordDate = record.date;
+      return !holidayRanges.some(range => 
+        recordDate >= range.startDate && recordDate <= range.endDate
+      );
+    });
 
     console.log('[Attendance GET] Found:', records.length, 'records');
     if (records.length > 0) {
@@ -43,6 +64,34 @@ export async function POST(req: NextRequest) {
     const db = getAdminDb();
     const body = await req.json();
     const records = Array.isArray(body) ? body : [body];
+
+    // Fetch holiday/vacation announcements to validate dates
+    const announcementsSnapshot = await db.collection('announcements')
+      .where('type', 'in', ['holiday', 'vacation'])
+      .get();
+    
+    const holidayRanges = announcementsSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        startDate: data.startDate || data.date,
+        endDate: data.endDate || data.date
+      };
+    }).filter(range => range.startDate && range.endDate);
+
+    // Check if any record falls within a holiday/vacation period
+    const invalidRecords = records.filter(record => {
+      const recordDate = record.date;
+      return holidayRanges.some(range => 
+        recordDate >= range.startDate && recordDate <= range.endDate
+      );
+    });
+
+    if (invalidRecords.length > 0) {
+      return NextResponse.json(
+        { error: 'Attendance cannot be filled for holiday/vacation dates' },
+        { status: 400 }
+      );
+    }
 
     const snapshot = await db.collection('attendance').get();
     const existing = snapshot.docs;
