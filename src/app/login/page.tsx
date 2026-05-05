@@ -13,7 +13,6 @@ function useIsTablet() {
     const checkTablet = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      // Detect tablet: 768-1024px width AND touch device OR specific tablet user agent
       const isTabletSize = width >= 768 && width <= 1024;
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       const isTabletUA = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk|Kindle/i.test(navigator.userAgent);
@@ -25,13 +24,10 @@ function useIsTablet() {
       timeoutId = setTimeout(checkTablet, 250);
     };
 
-    // Check once on mount
     checkTablet();
 
-    // Use orientationchange instead of resize for tablets (more stable)
     window.addEventListener('orientationchange', debouncedCheck);
 
-    // Only add resize listener for desktop browsers, not tablets
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (!isTouchDevice) {
       window.addEventListener('resize', debouncedCheck);
@@ -99,7 +95,6 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // Never remember admin logins, only students
       const isAdminLogin = username === '242105010083';
       await login(username, password, !isAdminLogin && remember);
       if (!isAdminLogin && remember) {
@@ -114,21 +109,38 @@ export default function LoginPage() {
     }
   };
 
-return (
-    <div className={`min-h-screen flex items-center justify-center ${isTablet ? 'bg-blue-800' : 'animated-gradient-bg'} ${isTablet ? 'prevent-flicker' : ''} ${!isTablet ? "bg-[linear-gradient(135deg,#1e3a8a,#1e40af,#1e3a5f,#1e40af)]" : ''}`} style={isTablet ? { backgroundColor: '#1e3a5f' } : { backgroundSize: '400% 400%' }}>
-       {/* Login Card */}
-       <div className={`relative z-10 w-full max-w-md mx-4 ${isTablet ? '' : 'login-card-entrance'}`}>
-           {/* Logo & Title */}
-           <div className="text-center mb-8 stagger-children">
-             <img src="/logo.jpeg" alt="Prathmik Kumarshala" className={`w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover ${isTablet ? '' : 'logo-breathe'}`} />
-             <h1 className={`text-3xl font-bold tracking-tight ${isTablet ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-500 to-amber-500 animate-gradient-text'}`}>PRATHMIK KUMARSHALA</h1>
-             <p className="text-blue-200 font-medium mt-1">Management System</p>
-             <p className="text-gray-300 text-sm mt-2">Sign in to your account</p>
-           </div>
+  return (
+    <div className={`min-h-screen flex items-center justify-center relative ${isTablet ? 'bg-[#1e3a5f]' : 'premium-gradient-bg'} ${isTablet ? 'prevent-flicker' : ''}`}>
+      {/* Floating Particles */}
+      {!isTablet && (
+        <>
+          <div className="particle particle-1" />
+          <div className="particle particle-2" />
+          <div className="particle particle-3" />
+          <div className="particle particle-4" />
+        </>
+      )}
+
+      {/* Login Card */}
+      <div className={`relative z-10 w-full max-w-md mx-4 ${isTablet ? '' : 'premium-card-entrance'}`}>
+        <div className={`glass-card glass-card-glow rounded-2xl p-8 ${isTablet ? 'bg-[#1e3a5f]/80' : ''}`}>
+          {/* Logo & Title */}
+          <div className="text-center mb-8 stagger-children">
+            <img
+              src="/logo.jpeg"
+              alt="Prathmik Kumarshala"
+              className={`w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover mx-auto ${isTablet ? '' : 'premium-logo-entrance premium-logo-breathe'}`}
+            />
+            <h1 className={`text-3xl font-bold tracking-tight ${isTablet ? 'text-white' : 'premium-text-gradient'}`}>
+              PRATHMIK KUMARSHALA
+            </h1>
+            <p className="text-blue-200 font-medium mt-1">Management System</p>
+            <p className="text-gray-300 text-sm mt-2">Sign in to your account</p>
+          </div>
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm animate-slide-in flex items-center gap-2">
+            <div className="premium-error border px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-slide-in">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -139,56 +151,48 @@ return (
           <form onSubmit={handleLogin} className="space-y-5">
             {/* Username Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Username</label>
-              <div className="relative input-icon-focus">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <label className="block text-sm font-semibold text-gray-200 mb-2">Username</label>
+              <div className={`relative premium-input-wrapper ${isTablet ? '' : ''}`}>
+                <div className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none ${isTablet ? '' : 'input-icon-premium'}`}>
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
-               <input
-                   type="text"
-                   value={username}
-                   onChange={(e) => { setUsername(e.target.value); setFieldErrors((prev) => ({ ...prev, username: undefined })); }}
-                   className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300 input-focus-glow'} bg-gray-50/50 ${
-                     fieldErrors.username
-                       ? 'border-red-400 focus:border-red-500'
-                       : 'border-gray-200 focus:border-blue-500'
-                   }`}
-                   placeholder="Enter your username"
-                   required
-                 />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setFieldErrors((prev) => ({ ...prev, username: undefined })); }}
+                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none ${isTablet ? 'bg-gray-800/50 border-gray-600 text-white' : 'premium-input'} ${fieldErrors.username ? 'border-red-400' : ''}`}
+                  placeholder="Enter your username"
+                  required
+                />
               </div>
               {fieldErrors.username && (
-                <p className="text-red-500 text-xs mt-1.5 ml-1">{fieldErrors.username}</p>
+                <p className="text-red-400 text-xs mt-1.5 ml-1">{fieldErrors.username}</p>
               )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-              <div className="relative input-icon-focus">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <label className="block text-sm font-semibold text-gray-200 mb-2">Password</label>
+              <div className={`relative premium-input-wrapper ${isTablet ? '' : ''}`}>
+                <div className={`absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none ${isTablet ? '' : 'input-icon-premium'}`}>
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
-               <input
-                   type={showPassword ? 'text' : 'password'}
-                   value={password}
-                   onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
-                   className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none ${isTablet ? '' : 'transition-all duration-300 input-focus-glow'} bg-gray-50/50 ${
-                     fieldErrors.password
-                       ? 'border-red-400 focus:border-red-500'
-                       : 'border-gray-200 focus:border-blue-500'
-                   }`}
-                   placeholder="Enter your password"
-                   required
-                 />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
+                  className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none ${isTablet ? 'bg-gray-800/50 border-gray-600 text-white' : 'premium-input'} ${fieldErrors.password ? 'border-red-400' : ''}`}
+                  placeholder="Enter your password"
+                  required
+                />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 ${isTablet ? '' : 'eye-toggle-spin'}`}
+                  className={`absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-200 ${isTablet ? '' : 'eye-toggle-premium'}`}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,11 +207,11 @@ return (
                 </button>
               </div>
               {fieldErrors.password && (
-                <p className="text-red-500 text-xs mt-1.5 ml-1">{fieldErrors.password}</p>
+                <p className="text-red-400 text-xs mt-1.5 ml-1">{fieldErrors.password}</p>
               )}
             </div>
 
-            {/* Remember Me & Forgot Password */}
+            {/* Remember Me */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer group">
                 <div className="relative">
@@ -217,7 +221,10 @@ return (
                     onChange={(e) => setRemember(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className={`w-5 h-5 border-2 border-gray-300 rounded peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all duration-200 flex items-center justify-center ${remember && !isTablet ? 'checkbox-check' : ''}`}>
+                  <div className={`w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center
+                    ${isTablet ? 'border-gray-400 bg-gray-700' : 'checkbox-premium peer-checked:border-purple-500 peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-500'}
+                    ${remember && !isTablet ? 'checkbox-check-premium' : ''}
+                    peer-checked:border-purple-500 peer-checked:bg-purple-600`}>
                     {remember && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -225,7 +232,7 @@ return (
                     )}
                   </div>
                 </div>
-                <span className="text-sm text-gray-600 group-hover:text-gray-800 transition-colors">Remember me</span>
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">Remember me</span>
               </label>
             </div>
 
@@ -234,7 +241,14 @@ return (
               type="submit"
               disabled={loading}
               onClick={handleRipple}
-              className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3.5 rounded-xl font-semibold text-base ${isTablet ? '' : 'button-with-sweep hover:from-amber-600 hover:to-orange-600 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 relative overflow-hidden'} disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2`}
+              className={`w-full text-white py-3.5 rounded-xl font-semibold text-base
+                ${isTablet
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-500'
+                  : 'premium-button'}
+                transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200
+                shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40
+                disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                flex items-center justify-center gap-2 relative overflow-hidden`}
             >
               {loading ? (
                 <>
@@ -255,11 +269,12 @@ return (
             </button>
           </form>
 
-           {/* Footer */}
-           <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-             <p className="text-xs text-gray-400">Prathmik Kumarshala Devla © 2026</p>
-           </div>
-         </div>
-       </div>
-   );
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t border-gray-700/50 text-center">
+            <p className="text-xs text-gray-400">Prathmik Kumarshala Devla © 2026</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
