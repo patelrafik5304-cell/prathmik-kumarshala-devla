@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { useAuth } from '@/context/AuthContext';
 
 interface Announcement {
   id: string;
@@ -17,6 +18,8 @@ interface Announcement {
 }
 
 export default function AnnouncementsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', priority: 'medium' });
@@ -83,7 +86,9 @@ export default function AnnouncementsPage() {
               <div className="flex gap-2 flex-shrink-0">
                 <Button variant="ghost" className={`px-3 py-1.5 text-sm ${a.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`} onClick={() => toggleActive(a)}>{a.isActive ? 'Deactivate' : 'Activate'}</Button>
                 <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(a)}>Edit</Button>
-                <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(a.id)}>Delete</Button>
+                {isAdmin && (
+                  <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(a.id)}>Delete</Button>
+                )}
               </div>
             </div>
           </Card>

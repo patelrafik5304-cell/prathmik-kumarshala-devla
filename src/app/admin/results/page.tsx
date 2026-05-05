@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
+import { useAuth } from '@/context/AuthContext';
 import * as XLSX from 'xlsx';
 
 interface Result {
@@ -33,6 +34,8 @@ function calculateGrade(pct: number): string {
 }
 
 export default function ResultsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [results, setResults] = useState<Result[]>([]);
   const [students, setStudents] = useState<{ id: string; username: string; name: string; class: string }[]>([]);
   const [selectedStudent, setSelectedStudent] = useState('');
@@ -274,7 +277,9 @@ export default function ResultsPage() {
                     <div className="flex flex-wrap gap-1">
                       <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => openEdit(result)}><Edit2 className="w-3 h-3" /></Button>
                       <Button variant="ghost" className={`px-2 py-1 text-xs ${result.published ? 'text-orange-600' : 'text-green-600'}`} onClick={() => handleTogglePublish(result.id, result.published)}>{result.published ? 'Unpublish' : 'Publish'}</Button>
-                      <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(result)}><Trash2 className="w-3 h-3" /></Button>
+                      {isAdmin && (
+                        <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(result)}><Trash2 className="w-3 h-3" /></Button>
+                      )}
                     </div>
                   </td>
                 </tr>

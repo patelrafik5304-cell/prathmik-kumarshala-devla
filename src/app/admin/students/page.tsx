@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
+import { useAuth } from '@/context/AuthContext';
 
 interface Student {
   id: string;
@@ -26,6 +27,8 @@ interface CsvRow {
 }
 
 export default function StudentsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
   const [filterClass, setFilterClass] = useState('all');
@@ -280,7 +283,9 @@ export default function StudentsPage() {
                   <td className="px-4 py-4">
                     <div className="flex gap-2">
                       <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(student)}>Edit</Button>
-                      <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(student)}>Delete</Button>
+                      {isAdmin && (
+                        <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(student)}>Delete</Button>
+                      )}
                     </div>
                   </td>
                 </tr>

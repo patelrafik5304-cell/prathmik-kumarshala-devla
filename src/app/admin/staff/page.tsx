@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, User } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
 
 interface StaffMember {
   id: string;
@@ -13,6 +14,8 @@ interface StaffMember {
 }
 
 export default function StaffPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', designation: '', photo: '' });
@@ -99,7 +102,9 @@ export default function StaffPage() {
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(s)}>Edit</Button>
-                      <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(s.id)}>Delete</Button>
+                      {isAdmin && (
+                        <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(s.id)}>Delete</Button>
+                      )}
                     </div>
                   </td>
                 </tr>

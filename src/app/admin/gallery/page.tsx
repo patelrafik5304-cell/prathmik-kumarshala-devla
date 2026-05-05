@@ -7,6 +7,7 @@ import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
+import { useAuth } from '@/context/AuthContext';
 
 interface GalleryItem {
   _id: string;
@@ -18,6 +19,8 @@ interface GalleryItem {
 }
 
 export default function GalleryPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [images, setImages] = useState<GalleryItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Events', description: '' });
@@ -98,7 +101,9 @@ export default function GalleryPage() {
                 <p className="text-sm text-gray-500 mb-1 truncate">{img.description}</p>
                 <p className="text-xs text-gray-400 mb-3">{img.date}</p>
                 <div className="flex gap-2">
-                  <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(img._id)}><Trash2 className="w-3.5 h-3.5" /> Delete</Button>
+                  {isAdmin && (
+                    <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(img._id)}><Trash2 className="w-3.5 h-3.5" /> Delete</Button>
+                  )}
                 </div>
               </div>
             </Card>
