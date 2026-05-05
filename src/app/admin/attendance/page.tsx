@@ -18,6 +18,8 @@ interface Announcement {
   title: string;
   date: string;
   type?: 'general' | 'holiday' | 'vacation';
+  startDate?: string;
+  endDate?: string;
 }
 
 function getDateRange() {
@@ -83,26 +85,33 @@ export default function AttendancePage() {
         return;
       }
 
-      // Check for holiday/vacation announcements
-      try {
-        const res = await fetch('/api/announcements');
-        const announcements: Announcement[] = await res.json();
-        const holidayAnnouncement = announcements.find((a: any) =>
-          a.date === date && (a.type === 'holiday' || a.type === 'vacation')
-        );
-
-        if (holidayAnnouncement) {
-          setIsHoliday(true);
-          setHolidayReason(holidayAnnouncement.title || 'Holiday/Vacation');
-          setAttendance(initial);
-          return;
-        }
-
-        setIsHoliday(false);
-        setHolidayReason('');
-      } catch (e) {
-        console.error('Failed to check announcements', e);
-      }
+  // Check for holiday/vacation announcements with date range
+       try {
+         const res = await fetch('/api/announcements');
+         const announcements: Announcement[] = await res.json();
+         const holidayAnnouncement = announcements.find((a: any) => {
+           if (a.type !== 'holiday' && a.type !== 'vacation') return false;
+           
+           // Check if date falls within the range
+           if (a.startDate && a.endDate) {
+             return date >= a.startDate && date <= a.endDate;
+           }
+           // Fallback to single date check
+           return a.date === date;
+         });
+         
+         if (holidayAnnouncement) {
+           setIsHoliday(true);
+           setHolidayReason(holidayAnnouncement.title || 'Holiday/Vacation');
+           setAttendance(initial);
+           return;
+         }
+         
+         setIsHoliday(false);
+         setHolidayReason('');
+       } catch (e) {
+         console.error('Failed to check announcements', e);
+       }
 
       try {
         const res = await fetch(`/api/attendance?date=${date}`);
