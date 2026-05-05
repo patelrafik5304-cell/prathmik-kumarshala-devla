@@ -9,6 +9,7 @@ interface AuthContextType {
   initialized: boolean;
   login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
+  autoLogin: (user: { username: string; name: string; role: string; class?: string }) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
