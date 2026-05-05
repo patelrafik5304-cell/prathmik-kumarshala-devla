@@ -336,8 +336,9 @@ export default function ResultsPage() {
     if (!editingResult) return;
     setActionLoading(true);
     const subjects = { ...editMarks };
+    const subjectsForClass = getSubjectsForClass(editingResult.class);
     let total = 0; let count = 0;
-    SUBJECTS.forEach((sub) => { const val = subjects[sub]; if (val !== undefined && !isNaN(val)) { total += val; count++; } });
+    subjectsForClass.forEach((sub) => { const val = subjects[sub]; if (val !== undefined && !isNaN(val)) { total += val; count++; } });
     const maxMarks = count * 100;
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
     try {
