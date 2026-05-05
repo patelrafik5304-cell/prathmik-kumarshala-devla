@@ -52,6 +52,7 @@ export default function ResultsPage() {
   const [editExam, setEditExam] = useState('');
   const [editMarks, setEditMarks] = useState<Record<string, number>>({});
   const [actionLoading, setActionLoading] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -167,6 +168,52 @@ export default function ResultsPage() {
     setShowDeleteModal(true);
   };
 
+  const handleBulkPublish = async () => {
+    if (filterClass === 'all') {
+      alert('Please select a specific class to bulk publish.');
+      return;
+    }
+    setBulkActionLoading(true);
+    const toUpdate = filtered.filter(r => !r.published);
+    // Optimistic update
+    setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: true } : r));
+    try {
+      const promises = toUpdate.map(r =>
+        fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: true }) })
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      // Revert on error
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    }
+    setBulkActionLoading(false);
+  };
+
+  const handleBulkUnpublish = async () => {
+    if (filterClass === 'all') {
+      alert('Please select a specific class to bulk unpublish.');
+      return;
+    }
+    setBulkActionLoading(true);
+    const toUpdate = filtered.filter(r => r.published);
+    // Optimistic update
+    setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: false } : r));
+    try {
+      const promises = toUpdate.map(r =>
+        fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: false }) })
+      );
+      await Promise.all(promises);
+    } catch (err) {
+      // Revert on error
+      const r = await fetch('/api/results');
+      const d = await r.json();
+      setResults(Array.isArray(d) ? d : []);
+    }
+    setBulkActionLoading(false);
+  };
+
   const handleTogglePublish = async (id: string, current: boolean) => {
     // Optimistic update
     setResults(prev => prev.map((r) => r.id === id ? { ...r, published: !current } : r));
@@ -256,6 +303,37 @@ export default function ResultsPage() {
           {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : c === '0' ? 'BALVATIKA' : `Class ${c}`}</option>))}
         </select>
       </Card>
+
+      {isAdmin && (
+        <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-blue-800">Bulk Actions for {filterClass === 'all' ? 'All Classes' : `Class ${filterClass === '0' ? 'BALVATIKA' : filterClass}`}</h3>
+              <p className="text-sm text-blue-600 mt-1">Publish or unpublish all results in the selected class</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="primary"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                loading={bulkActionLoading}
+                disabled={filtered.length === 0}
+                onClick={handleBulkPublish}
+              >
+                <Check className="w-4 h-4" /> Publish All
+              </Button>
+              <Button
+                variant="primary"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+                loading={bulkActionLoading}
+                disabled={filtered.length === 0}
+                onClick={handleBulkUnpublish}
+              >
+                <EyeOff className="w-4 h-4" /> Unpublish All
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
