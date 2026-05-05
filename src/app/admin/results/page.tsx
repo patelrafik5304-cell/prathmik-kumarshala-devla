@@ -107,6 +107,11 @@ export default function ResultsPage() {
 
   const classes = ['all', ...[...new Set(students.map((s) => s.class))].sort((a, b) => (parseInt(a) || 0) - (parseInt(b) || 0))];
   const filtered = filterClass === 'all' ? results : results.filter((r) => r.class === filterClass);
+
+  const formatClass = (cls: string): string => {
+    if (cls === '0') return 'BALVATIKA';
+    return cls; // Return simple number like "1", "2", etc.
+  };
   const currentSubjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
 
   const downloadCSV = () => {
@@ -118,11 +123,20 @@ export default function ResultsPage() {
     if (classStudents.length === 0) { alert('No students found for the selected class.'); return; }
     const subjects = getSubjectsForClass(filterClass);
     if (subjects.length === 0) {
-      alert(`No subjects configured for Class ${filterClass === '0' ? 'BALVATIKA' : filterClass}. Please configure subjects first.`);
+      alert(`No subjects configured for Class ${filterClass}. Please configure subjects first.`);
       return;
     }
     const header = ['Username', 'Name', 'Class', 'Exam', ...subjects].join(',');
-    const rows = classStudents.map((s) => { const vals = [s.username, s.name, s.class, 'Mid-term']; subjects.forEach(() => vals.push('')); return vals.join(','); });
+    const rows = classStudents.map((s) => {
+      const vals = [
+        s.username,
+        `"${s.name}"`,
+        filterClass,
+        'Mid-term',
+        ...subjects.map(() => '')
+      ];
+      return vals.join(',');
+    });
     const csv = [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -153,8 +167,36 @@ export default function ResultsPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
     const lines = text.trim().split('\n');
     if (lines.length < 2) { setUploadMsg('CSV file has no data rows.'); return; }
-    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
-    const rawRows = lines.slice(1).map((line) => { const vals = line.split(','); const row: Record<string, string> = {}; headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; }); if (row['name']) row['student name'] = row['name']; else if (row['student']) row['student name'] = row['student']; return row; });
+
+    // Parse CSV properly handling quoted fields
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
+    const rawRows = lines.slice(1).map((line) => {
+      const vals = parseCSVLine(line);
+      const row: Record<string, string> = {};
+      headers.forEach((h, i) => { row[h] = vals[i]?.trim() ?? ''; });
+      if (row['name']) row['student name'] = row['name'];
+      else if (row['student']) row['student name'] = row['student'];
+      return row;
+    });
     const rows = rawRows.filter((row) => !!row['username'] && !!row['student name']);
     processRows(rows);
   };
@@ -420,7 +462,7 @@ export default function ResultsPage() {
       <Card className="p-4 mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-2">Filter by Class</label>
         <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white">
-          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : c === '0' ? 'BALVATIKA' : `Class ${c}`}</option>))}
+          {classes.map((c) => (<option key={c} value={c}>{c === 'all' ? 'All Classes' : `Class ${formatClass(c)}`}</option>))}
         </select>
       </Card>
 
@@ -428,7 +470,7 @@ export default function ResultsPage() {
         <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-blue-800">Bulk Actions for {filterClass === 'all' ? 'All Classes' : `Class ${filterClass === '0' ? 'BALVATIKA' : filterClass}`}</h3>
+              <h3 className="font-semibold text-blue-800">Bulk Actions for {filterClass === 'all' ? 'All Classes' : `Class ${formatClass(filterClass)}`}</h3>
               <p className="text-sm text-blue-600 mt-1">Publish, unpublish, or delete all results in the selected class</p>
             </div>
             <div className="flex gap-2">
@@ -490,7 +532,7 @@ export default function ResultsPage() {
                 <tr key={result.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-4 font-mono text-sm text-primary">{result.studentUsername}</td>
                   <td className="px-4 py-4 font-medium text-gray-800">{result.studentName}</td>
-                  <td className="px-4 py-4 text-gray-600">{result.class}</td>
+                  <td className="px-4 py-4 text-gray-600">{formatClass(result.class)}</td>
                   <td className="px-4 py-4 text-gray-600">{result.exam}</td>
                   <td className="px-4 py-4 font-semibold">{result.percentage}</td>
                   <td className="px-4 py-4"><Badge variant={result.grade === 'A' || result.grade === 'A+' ? 'success' : result.grade === 'B' || result.grade === 'B+' ? 'info' : result.grade === 'C' ? 'warning' : 'danger'}>{result.grade}</Badge></td>
@@ -522,13 +564,13 @@ export default function ResultsPage() {
       {/* Add Result Modal */}
       <Modal open={showAddModal} onClose={() => { setShowAddModal(false); setSelectedStudent(''); }} title="Add Result">
         <form className="space-y-4" onSubmit={handleAddResult}>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
-            <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white" required>
-              <option value="">Choose a student...</option>
-              {students.map((s) => (<option key={s.id} value={s.id}>{s.name} ({s.username}) - {s.class === '0' ? 'BALVATIKA' : `Class ${s.class}`}</option>))}
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Student</label>
+          <select value={selectedStudent} onChange={(e) => setSelectedStudent(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all bg-white" required>
+            <option value="">Choose a student...</option>
+            {students.map((s) => (<option key={s.id} value={s.id}>{s.name} ({s.username}) - Class {formatClass(s.class)}</option>))}
+          </select>
+        </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Username</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.username || ''} readOnly /></div>
             <div><label className="block text-sm font-semibold text-gray-700 mb-2">Student Name</label><input type="text" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500" value={students.find((s) => s.id === selectedStudent)?.name || ''} readOnly /></div>
@@ -617,7 +659,7 @@ export default function ResultsPage() {
           </div>
           <p className="text-gray-600 mb-2">Are you sure you want to delete ALL results for</p>
           <p className="font-semibold text-gray-800 mb-2">
-            {filterClass === '0' ? 'BALVATIKA' : `Class ${filterClass}`}
+            Class {formatClass(filterClass)}
           </p>
           <p className="text-sm text-red-600 mb-2">This will delete {filtered.length} result(s).</p>
           <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
@@ -637,7 +679,7 @@ export default function ResultsPage() {
             </label>
             <input
               type="text"
-              value={`Class ${editingClass === '0' ? 'BALVATIKA' : editingClass}`}
+              value={`Class ${formatClass(editingClass)}`}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-500"
               disabled
             />
