@@ -64,7 +64,7 @@ export default function StudentsPage() {
 
   useEffect(() => {
     fetch('/api/students').then((r) => r.json()).then((data) => {
-      console.log('Students API response:', data);
+      console.log('Initial load:', data.length, 'students');
       setStudents(Array.isArray(data) ? data : []);
     }).catch(err => {
       console.error('Failed to fetch students:', err);
