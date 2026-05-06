@@ -45,8 +45,8 @@ export async function GET() {
     const snapshot = await db.collection('students').get();
     const students = snapshot.docs.map(doc => {
       const data = doc.data();
-      console.log('[Students GET] Student:', data.name, 'has plainPassword:', !!data.plainPassword);
-      return { ...data, id: doc.id };
+      const { password, plainPassword, ...safeData } = data;
+      return { ...safeData, id: doc.id };
     });
     students.sort((a: any, b: any) => {
       const dateA = (a as any).createdAt || '';
@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
       username,
       email,
       password: hashedPassword,
-      plainPassword: password, // Store plain password temporarily
       photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });
