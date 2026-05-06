@@ -206,12 +206,29 @@ export default function StudentsPage() {
   const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Validate file size (max 1MB)
+    if (file.size > 1024 * 1024) {
+      alert('File too large. Maximum size is 1MB.');
+      return;
+    }
+    
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      alert('Please upload a .csv file.');
+      return;
+    }
+    
     setCsvFile(file);
     setCsvResult(null);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
       const rows = parseCsv(text);
+      if (rows.length > 100) {
+        alert('Maximum 100 students allowed per import. Please split your file.');
+        return;
+      }
       setCsvRows(rows);
     };
     reader.readAsText(file);
@@ -227,7 +244,12 @@ export default function StudentsPage() {
         body: JSON.stringify({ students: csvRows }),
       });
       const data = await res.json();
-      setCsvResult({ success: data.success, total: data.total, errors: data.errors || [] });
+      setCsvResult({ 
+        success: data.success, 
+        total: csvRows.length, 
+        errors: data.errors || [],
+        credentials: data.credentials || []
+      });
       if (data.success > 0) {
         fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
       }
@@ -642,9 +664,34 @@ export default function StudentsPage() {
           {csvResult && (
             <div className={`rounded-xl p-4 ${csvResult.errors.length > 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
               <p className="font-semibold text-sm">{csvResult.success}/{csvResult.total} students imported</p>
+              {csvResult.success > 0 && csvResult.credentials && (
+                <details className="mt-2">
+                  <summary className="text-sm text-blue-600 cursor-pointer hover:underline">Show Login Credentials</summary>
+                  <div className="mt-2 border rounded-lg overflow-hidden">
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-2 py-1 text-left">Name</th>
+                          <th className="px-2 py-1 text-left">Username</th>
+                          <th className="px-2 py-1 text-left">Password</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {csvResult.credentials.map((c: any, i: number) => (
+                          <tr key={i} className="border-t">
+                            <td className="px-2 py-1">{c.name}</td>
+                            <td className="px-2 py-1 font-mono">{c.username}</td>
+                            <td className="px-2 py-1 font-mono">{c.password}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              )}
               {csvResult.errors.length > 0 && (
                 <ul className="mt-2 text-xs text-red-600 space-y-1">
-                  {csvResult.errors.map((err, i) => <li key={i}>{err}</li>)}
+                  {csvResult.errors.map((err: string, i: number) => <li key={i}>{err}</li>)}
                 </ul>
               )}
             </div>
