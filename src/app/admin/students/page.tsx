@@ -124,20 +124,31 @@ export default function StudentsPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!bulkDeleteClass) return;
+    console.log('handleBulkDelete called, bulkDeleteClass:', bulkDeleteClass);
+    if (!bulkDeleteClass) {
+      alert('Please select a class first');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch(`/api/students?class=${bulkDeleteClass}`, { method: 'DELETE' });
+      const url = `/api/students?class=${bulkDeleteClass}`;
+      console.log('Deleting with URL:', url);
+      const res = await fetch(url, { method: 'DELETE' });
+      console.log('Response status:', res.status);
       const data = await res.json();
+      console.log('Response data:', data);
       if (data.success) {
         setBulkDeleteCount(data.deletedCount);
         const displayClass = bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`;
         setSavedMsg(`Deleted ${data.deletedCount} students from ${displayClass}`);
         fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
         setTimeout(() => setSavedMsg(''), 5000);
+      } else {
+        alert('Delete failed: ' + (data.error || 'Unknown error'));
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Bulk delete failed', e);
+      alert('Delete failed: ' + e.message);
     }
     setLoading(false);
   };
@@ -747,8 +758,8 @@ export default function StudentsPage() {
           <p className="text-sm text-red-600 mb-2">This will also delete all attendance and result records for these students.</p>
           <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
           <div className="flex gap-3">
-            <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
-            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={handleBulkDelete}>Yes, Delete All</Button>
+            <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
+            <Button type="button" variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { console.log('Bulk delete clicked, class:', bulkDeleteClass); handleBulkDelete(); }}>Yes, Delete All</Button>
           </div>
         </div>
       </Modal>
