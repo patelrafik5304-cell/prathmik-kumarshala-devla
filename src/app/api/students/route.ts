@@ -12,7 +12,7 @@ function generateUsername(name: string, count: number): string {
 }
 
 function generatePassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const chars = '0123456789';
   let password = '';
   for (let i = 0; i < 6; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       username,
       email,
       password: hashedPassword,
-      plainPassword: password, // Store plain password temporarily for PDF download
+      plainPassword: password, // Store plain password temporarily
       photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, FileSpreadsheet, Trash2, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -292,17 +292,6 @@ export default function StudentsPage() {
     setCsvLoading(false);
   };
 
-  const downloadTemplate = () => {
-    const csv = 'name,childuid,class\njohn,43552,Class 2\njane,35364,Class 3';
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'student_import_template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const getClassDisplay = (cls: string) => cls === '0' ? 'BALVATIKA' : `Class ${cls}`;
 
   return (
@@ -590,12 +579,6 @@ export default function StudentsPage() {
                 <p className="text-xs text-blue-600 mt-1">Your CSV must have headers: <code className="bg-blue-100 px-1 rounded">name,childuid,class</code></p>
               </div>
             </div>
-          </div>
-
-          <div className="flex justify-center">
-            <Button variant="secondary" onClick={downloadTemplate}>
-              <Download className="w-4 h-4" /> Download Template
-            </Button>
           </div>
 
           <div>

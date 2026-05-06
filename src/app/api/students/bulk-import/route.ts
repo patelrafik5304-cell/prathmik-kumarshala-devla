@@ -12,7 +12,7 @@ function generateUsername(name: string, count: number): string {
 }
 
 function generatePassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const chars = '0123456789';
   let password = '';
   for (let i = 0; i < 6; i++) {
     password += chars.charAt(Math.floor(Math.random() * chars.length));
