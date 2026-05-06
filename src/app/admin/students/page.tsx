@@ -275,7 +275,13 @@ export default function StudentsPage() {
         const r = await fetch('/api/students');
         const d = await r.json();
         setStudents(Array.isArray(d) ? d : []);
-        setCsvResult({ ...csvResult, done: true });
+        setCsvResult({ 
+          success: csvResult?.success || 0, 
+          total: csvResult?.total || 0, 
+          errors: csvResult?.errors || [], 
+          credentials: csvResult?.credentials, 
+          done: true 
+        });
       }
     } catch (err) {
       console.error('Bulk import error:', err);
