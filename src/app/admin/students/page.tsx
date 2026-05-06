@@ -45,7 +45,7 @@ export default function StudentsPage() {
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
-  const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[]; credentials?: Array<{ name: string; username: string; password: string }> } | null>(null);
+  const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[]; done?: boolean; credentials?: Array<{ name: string; username: string; password: string }> } | null>(null);
   const [bulkDeleteClass, setBulkDeleteClass] = useState('');
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
@@ -275,6 +275,7 @@ export default function StudentsPage() {
         const r = await fetch('/api/students');
         const d = await r.json();
         setStudents(Array.isArray(d) ? d : []);
+        setCsvResult({ ...csvResult, done: true });
       }
     } catch (err) {
       console.error('Bulk import error:', err);
@@ -722,10 +723,14 @@ export default function StudentsPage() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button onClick={handleBulkImport} loading={csvLoading} disabled={csvRows.length === 0} className="flex-1">
+            <Button onClick={handleBulkImport} loading={csvLoading} disabled={csvRows.length === 0 || (csvResult?.done)} className="flex-1">
               {csvLoading ? 'Importing...' : 'Import All'}
             </Button>
-            <Button variant="secondary" className="flex-1" onClick={() => setShowCsvModal(false)}>Close</Button>
+            {csvResult && csvResult.success > 0 ? (
+              <Button variant="secondary" className="flex-1" onClick={() => { setShowCsvModal(false); setCsvResult(null); }}>Done</Button>
+            ) : (
+              <Button variant="secondary" className="flex-1" onClick={() => setShowCsvModal(false)}>Close</Button>
+            )}
           </div>
         </div>
       </Modal>
