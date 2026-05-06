@@ -284,6 +284,7 @@ export default function StudentsPage() {
             newMap.set(c.username, c.password);
           });
           setStudentPasswords(newMap);
+          console.log('Stored passwords for', data.credentials.length, 'students. Map size:', newMap.size);
         }
         
         setCsvResult({ 
