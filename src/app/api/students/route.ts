@@ -145,9 +145,20 @@ export async function DELETE(req: NextRequest) {
     if (className) {
       // Handle both "1" and "Class 1" formats
       const classValue = className === '0' ? 'BALVATIKA' : (className.startsWith('Class ') ? className : `Class ${className}`);
+      console.log('[Students DELETE] Looking for class:', classValue);
+      
+      // Debug: Check all students and their classes
+      const allStudents = await db.collection('students').get();
+      console.log('[Students DELETE] Total students:', allStudents.size);
+      allStudents.docs.forEach(doc => {
+        console.log('[Students DELETE] Student:', doc.data().name, 'class:', doc.data().class);
+      });
+      
       const snapshot = await db.collection('students').where('class', '==', classValue).get();
+      console.log('[Students DELETE] Found', snapshot.size, 'students with class', classValue);
+      
       if (snapshot.empty) {
-        return NextResponse.json({ error: 'No students found in this class' }, { status: 404 });
+        return NextResponse.json({ error: `No students found in class ${classValue}. Total students: ${allStudents.size}` }, { status: 404 });
       }
 
       const batch = db.batch();
