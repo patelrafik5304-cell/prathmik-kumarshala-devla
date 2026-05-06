@@ -19,6 +19,7 @@ export interface Student {
   address: string;
   profileImage?: string;
   attendancePercentage?: number;
+  plainPassword?: string;
 }
 
 export interface Staff {

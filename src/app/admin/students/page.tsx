@@ -17,6 +17,7 @@ interface Student {
   class: string;
   email: string;
   password: string;
+  plainPassword?: string;
   photo?: string;
 }
 
@@ -46,7 +47,6 @@ export default function StudentsPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[]; done?: boolean; credentials?: Array<{ name: string; username: string; password: string }> } | null>(null);
-  const [studentPasswords, setStudentPasswords] = useState<Map<string, string>>(new Map());
   const [bulkDeleteClass, setBulkDeleteClass] = useState('');
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
@@ -277,16 +277,6 @@ export default function StudentsPage() {
         const d = await r.json();
         setStudents(Array.isArray(d) ? d : []);
         
-        // Store plain passwords for PDF download (use data.credentials directly, not csvResult)
-        if (data.credentials && data.credentials.length > 0) {
-          const newMap = new Map(studentPasswords);
-          data.credentials.forEach((c: any) => {
-            newMap.set(c.username, c.password);
-          });
-          setStudentPasswords(newMap);
-          console.log('Stored passwords for', data.credentials.length, 'students. Map size:', newMap.size);
-        }
-        
         setCsvResult({ 
           success: data.success, 
           total: csvRows.length, 
@@ -320,10 +310,6 @@ export default function StudentsPage() {
 
     const studentsToShow = filtered;
     
-    // Use stored passwords (from import) or show placeholder
-    const credsMap = studentPasswords;
-    console.log('PDF: studentPasswords size:', credsMap.size);
-    
     let html = `
       <!DOCTYPE html>
       <html>
@@ -356,8 +342,8 @@ export default function StudentsPage() {
     `;
 
     studentsToShow.forEach(student => {
-      // Use plain password from import if available, otherwise show placeholder
-      const plainPassword = credsMap.get(student.username) || student.password || '[See import credentials]';
+      // Use plainPassword from DB (stored temporarily), fallback to placeholder
+      const plainPassword = student.plainPassword || '[Password not available]';
       html += `
         <tr>
           <td>${student.name}</td>

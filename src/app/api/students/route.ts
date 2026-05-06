@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       username,
       email,
       password: hashedPassword,
+      plainPassword: password, // Store plain password temporarily for PDF download
       photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });
