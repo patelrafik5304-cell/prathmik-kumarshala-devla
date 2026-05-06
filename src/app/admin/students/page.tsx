@@ -483,7 +483,7 @@ export default function StudentsPage() {
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm">
-                        {visiblePasswords[student.id] ? (student.plainPassword || '••••••') : '••••••'}
+                        {visiblePasswords[student.id] ? (student.plainPassword && !student.plainPassword.startsWith('$2b$') ? student.plainPassword : '••••••') : '••••••'}
                       </span>
                       <button onClick={() => setVisiblePasswords((prev) => ({ ...prev, [student.id]: !prev[student.id] }))} className="text-gray-400 hover:text-gray-600 transition-colors">
                         {visiblePasswords[student.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -639,7 +639,7 @@ export default function StudentsPage() {
                           <tr key={i} className="border-t">
                             <td className="px-2 py-1">{c.name}</td>
                             <td className="px-2 py-1 font-mono">{c.username}</td>
-                            <td className="px-2 py-1 font-mono">{c.password}</td>
+                             <td className="px-2 py-1 font-mono">{c.password && c.password.startsWith('$2b$') ? '••••••' : (c.password || '••••••')}</td>
                           </tr>
                         ))}
                       </tbody>
