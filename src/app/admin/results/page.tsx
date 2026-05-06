@@ -235,15 +235,9 @@ export default function ResultsPage() {
     if (preview.length === 0) { setUploadMsg('No results to upload.'); setActionLoading(false); return; }
     try {
       const res = await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ records: preview, replace: true }) });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setPreview([]);
-        setShowUploadModal(false);
-        const r = await fetch('/api/results');
-        const d = await r.json();
-        setResults(Array.isArray(d) ? d : []);
-        setUploadSuccess(`${data.count} result(s) uploaded!`);
-      } else { setUploadMsg(data.error || `Upload failed (status ${res.status})`); }
+      if (res.ok) {
+        setTimeout(() => window.location.reload(), 500);
+      }
     } catch (err: any) { setUploadMsg(err.message || 'Network error'); }
     setActionLoading(false);
   };
@@ -251,18 +245,11 @@ export default function ResultsPage() {
   const handleDelete = async () => {
     if (!resultToDelete) return;
     setActionLoading(true);
-    const deletedId = resultToDelete.id;
-    // Optimistic update
-    setResults(prev => prev.filter((r) => r.id !== deletedId));
-    setShowDeleteModal(false);
-    setResultToDelete(null);
     try {
-      await fetch(`/api/results?id=${deletedId}`, { method: 'DELETE' });
+      await fetch(`/api/results?id=${resultToDelete.id}`, { method: 'DELETE' });
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
-      // Revert on error
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
+      console.error('Delete failed', err);
     }
     setActionLoading(false);
   };
@@ -284,26 +271,15 @@ export default function ResultsPage() {
       setBulkActionLoading(false);
       return;
     }
-    // Optimistic update
-    setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: true } : r));
     try {
       const promises = toUpdate.map(r =>
         fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: true }) })
       );
-      const responses = await Promise.all(promises);
-      const failed = responses.filter(res => !res.ok);
-      if (failed.length > 0) {
-        const errorText = await failed[0].text();
-        console.error('Bulk publish failed:', errorText);
-        throw new Error('Some updates failed');
-      }
+      await Promise.all(promises);
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
       console.error('Bulk publish error:', err);
-      alert('Failed to publish all results. Reverting changes.');
-      // Revert on error
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
+      alert('Failed to publish all results.');
     }
     setBulkActionLoading(false);
   };
@@ -320,26 +296,15 @@ export default function ResultsPage() {
       setBulkActionLoading(false);
       return;
     }
-    // Optimistic update
-    setResults(prev => prev.map(r => r.class === filterClass ? { ...r, published: false } : r));
     try {
       const promises = toUpdate.map(r =>
         fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: r.id, published: false }) })
       );
-      const responses = await Promise.all(promises);
-      const failed = responses.filter(res => !res.ok);
-      if (failed.length > 0) {
-        const errorText = await failed[0].text();
-        console.error('Bulk unpublish failed:', errorText);
-        throw new Error('Some updates failed');
-      }
+      await Promise.all(promises);
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
       console.error('Bulk unpublish error:', err);
-      alert('Failed to unpublish all results. Reverting changes.');
-      // Revert on error
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
+      alert('Failed to unpublish all results.');
     }
     setBulkActionLoading(false);
   };
@@ -351,19 +316,15 @@ export default function ResultsPage() {
     }
     setBulkActionLoading(true);
     const toDelete = filtered;
-    // Optimistic update
-    setResults(prev => prev.filter(r => r.class !== filterClass));
     setShowBulkDeleteModal(false);
     try {
       const promises = toDelete.map(r =>
         fetch(`/api/results?id=${r.id}`, { method: 'DELETE' })
       );
       await Promise.all(promises);
+      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
-      // Revert on error
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
+      console.error('Bulk delete error:', err);
     }
     setBulkActionLoading(false);
   };
@@ -402,14 +363,9 @@ export default function ResultsPage() {
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
     try {
       const res = await fetch('/api/results', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingResult.id, exam: editExam, subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
-      const data = await res.json();
       if (res.ok) {
-        setShowEditModal(false);
-        setEditingResult(null);
-        const r = await fetch('/api/results');
-        const d = await r.json();
-        setResults(Array.isArray(d) ? d : []);
-      } else { alert('Edit failed: ' + (data.error || 'Unknown error')); }
+        setTimeout(() => window.location.reload(), 500);
+      }
     } catch (err: any) { alert('Edit failed: ' + err.message); }
     setActionLoading(false);
   };
@@ -434,13 +390,8 @@ export default function ResultsPage() {
     const pct = maxMarks > 0 ? Math.round((total / maxMarks) * 100) : 0;
     try {
       await fetch('/api/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentUsername: student?.username, studentName: student?.name, class: student?.class, exam: fd.get('exam'), subjects, percentage: `${pct}%`, grade: calculateGrade(pct) }) });
-      setShowAddModal(false);
-      setSelectedStudent('');
-      form.reset();
-      const r = await fetch('/api/results');
-      const d = await r.json();
-      setResults(Array.isArray(d) ? d : []);
-    } catch (err: any) { alert('Add failed: ' + err.message); }
+      setTimeout(() => window.location.reload(), 500);
+    } catch (err: any) { alert('Failed to add result: ' + err.message); }
     setActionLoading(false);
   };
 

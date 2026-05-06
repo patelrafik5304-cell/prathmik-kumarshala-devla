@@ -39,13 +39,11 @@ export default function StaffPage() {
     e.preventDefault();
     if (editingStaff) {
       await fetch('/api/staff', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingStaff.id, ...form }) });
-      setEditingStaff(null);
     } else {
       await fetch('/api/staff', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     }
     setShowModal(false);
-    setForm({ name: '', designation: '', photo: '' });
-    refetch();
+    setTimeout(() => window.location.reload(), 500);
   };
 
   const handleEdit = (member: StaffMember) => {
@@ -57,7 +55,7 @@ export default function StaffPage() {
   const handleDelete = async (id: string) => {
     if (confirm('Delete this staff member?')) {
       await fetch(`/api/staff?id=${id}`, { method: 'DELETE' });
-      setStaff(staff.filter((s) => s.id !== id));
+      setTimeout(() => window.location.reload(), 500);
     }
   };
 

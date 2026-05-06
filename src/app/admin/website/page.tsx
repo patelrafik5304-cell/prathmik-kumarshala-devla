@@ -22,7 +22,7 @@ export default function WebsiteControl() {
 
   const handleChange = (key: string, value: any) => { setSettings({ ...settings, [key]: value }); };
 
-  const handleSave = () => { alert('Website settings saved successfully!'); console.log('Settings:', settings); };
+  const handleSave = () => { alert('Website settings saved successfully!'); setTimeout(() => window.location.reload(), 500); };
 
   return (
     <div>

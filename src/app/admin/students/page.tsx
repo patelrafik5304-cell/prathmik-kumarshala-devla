@@ -86,19 +86,12 @@ export default function StudentsPage() {
     setLoading(true);
     if (editingStudent) {
       await fetch('/api/students', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingStudent.id, ...form }) });
-      setStudents(students.map((s) => (s.id === editingStudent.id ? { ...s, ...form } : s)));
-      setShowModal(false);
-      setEditingStudent(null);
-      setForm({ name: '', childUid: '', class: '', photo: '' });
+      setTimeout(() => window.location.reload(), 500);
     } else {
       const res = await fetch('/api/students', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       const data = await res.json();
       if (data.id) {
-        setStudents([data, ...students]);
-        setNewCreds({ username: data.username, password: data.password });
-        setShowCreds(true);
-        setShowModal(false);
-        setForm({ name: '', childUid: '', class: '', photo: '' });
+        setTimeout(() => window.location.reload(), 500);
       }
     }
     setLoading(false);
@@ -113,9 +106,7 @@ export default function StudentsPage() {
   const handleDelete = async () => {
     if (!studentToDelete) return;
     await fetch(`/api/students?id=${studentToDelete.id}`, { method: 'DELETE' });
-    setStudents(students.filter((s) => s.id !== studentToDelete.id));
-    setShowDeleteModal(false);
-    setStudentToDelete(null);
+    setTimeout(() => window.location.reload(), 500);
   };
 
   const openDeleteModal = (student: Student) => {
@@ -130,18 +121,12 @@ export default function StudentsPage() {
       const res = await fetch(`/api/students?class=${bulkDeleteClass}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setBulkDeleteCount(data.deletedCount);
-        const displayClass = bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`;
-        setSavedMsg(`Deleted ${data.deletedCount} students from ${displayClass}`);
-        fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
-        setTimeout(() => setSavedMsg(''), 5000);
+        setTimeout(() => window.location.reload(), 500);
       }
     } catch (e) {
       console.error('Bulk delete failed', e);
     }
     setLoading(false);
-    setShowBulkDeleteModal(false);
-    setBulkDeleteClass('');
   };
 
   const handlePromoteStudents = async () => {
