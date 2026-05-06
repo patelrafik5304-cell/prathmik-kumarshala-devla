@@ -8,6 +8,7 @@ export interface User {
 
 export interface Student {
   id: string;
+  studentId: string;
   rollNumber: string;
   name: string;
   email: string;
@@ -17,9 +18,14 @@ export interface Student {
   parentName: string;
   contactNumber: string;
   address: string;
+  username: string;
+  password?: string;
+  plainPassword?: string;
   profileImage?: string;
   attendancePercentage?: number;
-  plainPassword?: string;
+  childUid?: string;
+  photo?: string;
+  createdAt?: string;
 }
 
 export interface Staff {
