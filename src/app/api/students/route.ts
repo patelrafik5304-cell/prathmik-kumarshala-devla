@@ -141,7 +141,9 @@ export async function DELETE(req: NextRequest) {
 
     // BULK DELETE BY CLASS
     if (className) {
-      const snapshot = await db.collection('students').where('class', '==', className).get();
+      // Handle both "1" and "Class 1" formats
+      const classValue = className === '0' ? 'BALVATIKA' : (className.startsWith('Class ') ? className : `Class ${className}`);
+      const snapshot = await db.collection('students').where('class', '==', classValue).get();
       if (snapshot.empty) {
         return NextResponse.json({ error: 'No students found in this class' }, { status: 404 });
       }
@@ -168,7 +170,7 @@ export async function DELETE(req: NextRequest) {
 
       // CASCADE: Delete attendance records for this class
       const attendanceSnapshot = await db.collection('attendance')
-        .where('class', '==', className)
+        .where('class', '==', classValue)
         .get();
       if (!attendanceSnapshot.empty) {
         const attendanceBatch = db.batch();
@@ -178,7 +180,7 @@ export async function DELETE(req: NextRequest) {
 
       // CASCADE: Delete results records for this class
       const resultsSnapshot = await db.collection('results')
-        .where('class', '==', className)
+        .where('class', '==', classValue)
         .get();
       if (!resultsSnapshot.empty) {
         const resultsBatch = db.batch();
@@ -186,7 +188,7 @@ export async function DELETE(req: NextRequest) {
         await resultsBatch.commit();
       }
 
-      const displayClass = className === '0' ? 'BALVATIKA' : `Class ${className}`;
+      const displayClass = className === '0' ? 'BALVATIKA' : classValue;
 
       return NextResponse.json({
         success: true,
