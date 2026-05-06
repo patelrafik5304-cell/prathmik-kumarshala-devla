@@ -277,20 +277,20 @@ export default function StudentsPage() {
         const d = await r.json();
         setStudents(Array.isArray(d) ? d : []);
         
-        // Store plain passwords for PDF download
-        if (csvResult?.credentials) {
+        // Store plain passwords for PDF download (use data.credentials directly, not csvResult)
+        if (data.credentials && data.credentials.length > 0) {
           const newMap = new Map(studentPasswords);
-          csvResult.credentials.forEach(c => {
+          data.credentials.forEach((c: any) => {
             newMap.set(c.username, c.password);
           });
           setStudentPasswords(newMap);
         }
         
         setCsvResult({ 
-          success: csvResult?.success || 0, 
-          total: csvResult?.total || 0, 
-          errors: csvResult?.errors || [], 
-          credentials: csvResult?.credentials, 
+          success: data.success, 
+          total: csvRows.length, 
+          errors: data.errors || [], 
+          credentials: data.credentials || [], 
           done: true 
         });
       }
@@ -355,7 +355,7 @@ export default function StudentsPage() {
 
     studentsToShow.forEach(student => {
       // Use plain password from import if available, otherwise show placeholder
-      const plainPassword = credsMap.get(student.username) || '[See import credentials]';
+      const plainPassword = credsMap.get(student.username) || student.password || '[See import credentials]';
       html += `
         <tr>
           <td>${student.name}</td>
