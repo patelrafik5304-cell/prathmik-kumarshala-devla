@@ -162,7 +162,7 @@ export async function DELETE(req: NextRequest) {
       });
       console.log('[Students DELETE] Unique classes in DB:', Array.from(uniqueClasses));
       
-      let snapshot: any = null;
+      let snapshot: FirebaseFirestore.QuerySnapshot | null = null;
       let classValue = '';
       
       for (const fmt of classFormats) {
@@ -184,9 +184,9 @@ export async function DELETE(req: NextRequest) {
       }
 
       const batch = db.batch();
-      const authDeletes: Promise<any>[] = [];
+      const authDeletes: Promise<void>[] = [];
 
-      snapshot.docs.forEach((doc) => {
+        snapshot.docs.forEach((doc) => {
         const data = doc.data();
         if (data.email) {
           try {
