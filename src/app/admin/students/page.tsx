@@ -480,16 +480,19 @@ export default function StudentsPage() {
                     <Badge variant="info">{getClassDisplay(student.class)}</Badge>
                   </td>
                   <td className="px-4 py-4 font-mono text-sm text-primary font-medium">{student.username}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">
-                        {visiblePasswords[student.id] ? (student.plainPassword && !student.plainPassword.startsWith('$2b$') ? student.plainPassword : '••••••') : '••••••'}
-                      </span>
-                      <button onClick={() => setVisiblePasswords((prev) => ({ ...prev, [student.id]: !prev[student.id] }))} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        {visiblePasswords[student.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </td>
+                   <td className="px-4 py-4">
+                     <div className="flex items-center gap-2">
+                       <span 
+                         className="font-mono text-sm"
+                         style={!visiblePasswords[student.id] ? { WebkitTextSecurity: 'disc' as any } : {}}
+                       >
+                         {student.plainPassword && !student.plainPassword.startsWith('$2b$') ? student.plainPassword : (student.password && !student.password.startsWith('$2b$') ? student.password : '••••••')}
+                       </span>
+                       <button onClick={() => setVisiblePasswords((prev) => ({ ...prev, [student.id]: !prev[student.id] }))} className="text-gray-400 hover:text-gray-600 transition-colors">
+                         {visiblePasswords[student.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                       </button>
+                     </div>
+                   </td>
                   <td className="px-4 py-4">
                     <div className="flex gap-2">
                       <Button variant="ghost" className="px-3 py-1.5 text-sm" onClick={() => handleEdit(student)}>Edit</Button>
