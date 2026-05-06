@@ -43,7 +43,11 @@ export async function GET() {
   try {
     const db = getAdminDb();
     const snapshot = await db.collection('students').get();
-    const students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    const students = snapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('[Students GET] Student:', data.name, 'has plainPassword:', !!data.plainPassword);
+      return { ...data, id: doc.id };
+    });
     students.sort((a: any, b: any) => {
       const dateA = (a as any).createdAt || '';
       const dateB = (b as any).createdAt || '';

@@ -342,8 +342,8 @@ export default function StudentsPage() {
     `;
 
     studentsToShow.forEach(student => {
-      // Use plainPassword from DB (stored temporarily), fallback to placeholder
-      const plainPassword = student.plainPassword || '[Password not available]';
+      // Use plainPassword from DB (stored temporarily for new students)
+      const plainPassword = student.plainPassword || '[Password not available - Re-import students to get passwords]';
       html += `
         <tr>
           <td>${student.name}</td>
