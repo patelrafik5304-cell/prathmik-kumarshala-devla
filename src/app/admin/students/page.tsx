@@ -63,7 +63,12 @@ export default function StudentsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
+    fetch('/api/students').then((r) => r.json()).then((data) => {
+      console.log('Students API response:', data);
+      setStudents(Array.isArray(data) ? data : []);
+    }).catch(err => {
+      console.error('Failed to fetch students:', err);
+    });
   }, []);
 
   const filtered = students.filter(
@@ -238,12 +243,15 @@ export default function StudentsPage() {
     if (csvRows.length === 0) return;
     setCsvLoading(true);
     try {
+      console.log('Uploading', csvRows.length, 'students...');
       const res = await fetch('/api/students/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ students: csvRows }),
       });
+      console.log('Response status:', res.status);
       const data = await res.json();
+      console.log('Response data:', data);
       setCsvResult({ 
         success: data.success, 
         total: csvRows.length, 
@@ -251,9 +259,14 @@ export default function StudentsPage() {
         credentials: data.credentials || []
       });
       if (data.success > 0) {
-        fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
+        console.log('Refreshing student list...');
+        const r = await fetch('/api/students');
+        const d = await r.json();
+        console.log('Fetched', d.length, 'students');
+        setStudents(Array.isArray(d) ? d : []);
       }
     } catch (err) {
+      console.error('Bulk import error:', err);
       setCsvResult({ success: 0, total: csvRows.length, errors: ['Failed to import'] });
     }
     setCsvLoading(false);
