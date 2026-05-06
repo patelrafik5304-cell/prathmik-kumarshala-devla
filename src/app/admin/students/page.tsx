@@ -483,7 +483,7 @@ export default function StudentsPage() {
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm">
-                        {visiblePasswords[student.id] ? (student.plainPassword || student.password) : '\u2022\u2022\u2022\u2022\u2022\u2022'}
+                        {visiblePasswords[student.id] ? (student.plainPassword || '••••••') : '••••••'}
                       </span>
                       <button onClick={() => setVisiblePasswords((prev) => ({ ...prev, [student.id]: !prev[student.id] }))} className="text-gray-400 hover:text-gray-600 transition-colors">
                         {visiblePasswords[student.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
