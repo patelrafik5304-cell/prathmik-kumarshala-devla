@@ -144,26 +144,25 @@ export async function DELETE(req: NextRequest) {
     // BULK DELETE BY CLASS
     if (className) {
       // Try multiple class formats
-      const classFormats = [
-        className === '0' ? 'BALVATIKA' : null,
-        className.startsWith('Class ') ? className : null,
-        `Class ${className}`,
-        className
-      ].filter(Boolean);
+      const classFormats: string[] = [];
+      if (className === '0') classFormats.push('BALVATIKA');
+      if (className.startsWith('Class ')) classFormats.push(className);
+      classFormats.push(`Class ${className}`);
+      classFormats.push(className);
       
       console.log('[Students DELETE] Trying class formats:', classFormats);
       
       // Debug: Check all students and their classes
       const allStudents = await db.collection('students').get();
       console.log('[Students DELETE] Total students:', allStudents.size);
-      const uniqueClasses = new Set();
+      const uniqueClasses = new Set<string>();
       allStudents.docs.forEach(doc => {
         const c = doc.data().class;
         if (c) uniqueClasses.add(c);
       });
       console.log('[Students DELETE] Unique classes in DB:', Array.from(uniqueClasses));
       
-      let snapshot = null;
+      let snapshot: any = null;
       let classValue = '';
       
       for (const fmt of classFormats) {
@@ -176,10 +175,11 @@ export async function DELETE(req: NextRequest) {
       }
       
       if (!snapshot || snapshot.empty) {
+        const existingClassesArr = Array.from(uniqueClasses);
         return NextResponse.json({ 
-          error: `No students found in class ${className}. Tried formats: ${classFormats.join(', ')}. Existing classes: ${Array.from(uniqueClasses).join(', ')}`,
+          error: `No students found in class ${className}. Tried formats: ${classFormats.join(', ')}`,
           totalStudents: allStudents.size,
-          existingClasses: Array.from(uniqueClasses)
+          existingClasses: existingClassesArr
         }, { status: 404 });
       }
 
