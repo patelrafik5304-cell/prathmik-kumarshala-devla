@@ -38,11 +38,12 @@ export default function AnnouncementsPage() {
     e.preventDefault();
     if (editingItem) {
       await fetch('/api/announcements', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingItem.id, ...form }) });
+      setEditingItem(null);
     } else {
       await fetch('/api/announcements', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, date: new Date().toISOString().split('T')[0], isActive: true }) });
     }
     setShowModal(false);
-    setTimeout(() => window.location.reload(), 500);
+    refetch();
   };
 
   const handleEdit = (item: Announcement) => {
@@ -63,11 +64,11 @@ export default function AnnouncementsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
     try {
       await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
-      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
-      console.error('Delete failed', err);
+      refetch();
     }
   };
 

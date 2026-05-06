@@ -42,16 +42,17 @@ export default function GalleryPage() {
     formData.append('description', form.description);
     if (imageFile) formData.append('image', imageFile);
     const res = await fetch('/api/gallery', { method: 'POST', body: formData });
-    if (res.ok) { setTimeout(() => window.location.reload(), 500); }
-    else { alert('Upload failed'); }
+    const data = await res.json();
+    if (res.ok) { setShowModal(false); setForm({ title: '', category: 'Events', description: '' }); setImageFile(null); refetch(); }
+    else { alert('Upload failed: ' + (data.error || 'Unknown error')); }
   };
 
   const handleDelete = async (id: string) => {
+    setImages(prev => prev.filter((i) => i._id !== id));
     try {
       await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
-      setTimeout(() => window.location.reload(), 500);
     } catch (err) {
-      console.error('Delete failed', err);
+      refetch();
     }
   };
 

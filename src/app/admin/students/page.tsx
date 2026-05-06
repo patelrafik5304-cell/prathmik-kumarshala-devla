@@ -86,12 +86,19 @@ export default function StudentsPage() {
     setLoading(true);
     if (editingStudent) {
       await fetch('/api/students', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: editingStudent.id, ...form }) });
-      setTimeout(() => window.location.reload(), 500);
+      setStudents(students.map((s) => (s.id === editingStudent.id ? { ...s, ...form } : s)));
+      setShowModal(false);
+      setEditingStudent(null);
+      setForm({ name: '', childUid: '', class: '', photo: '' });
     } else {
       const res = await fetch('/api/students', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       const data = await res.json();
       if (data.id) {
-        setTimeout(() => window.location.reload(), 500);
+        setStudents([data, ...students]);
+        setNewCreds({ username: data.username, password: data.password });
+        setShowCreds(true);
+        setShowModal(false);
+        setForm({ name: '', childUid: '', class: '', photo: '' });
       }
     }
     setLoading(false);
@@ -106,7 +113,9 @@ export default function StudentsPage() {
   const handleDelete = async () => {
     if (!studentToDelete) return;
     await fetch(`/api/students?id=${studentToDelete.id}`, { method: 'DELETE' });
-    setTimeout(() => window.location.reload(), 500);
+    setStudents(students.filter((s) => s.id !== studentToDelete.id));
+    setShowDeleteModal(false);
+    setStudentToDelete(null);
   };
 
   const openDeleteModal = (student: Student) => {
@@ -121,7 +130,11 @@ export default function StudentsPage() {
       const res = await fetch(`/api/students?class=${bulkDeleteClass}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        setTimeout(() => window.location.reload(), 500);
+        setBulkDeleteCount(data.deletedCount);
+        const displayClass = bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`;
+        setSavedMsg(`Deleted ${data.deletedCount} students from ${displayClass}`);
+        fetch('/api/students').then((r) => r.json()).then((d) => setStudents(Array.isArray(d) ? d : []));
+        setTimeout(() => setSavedMsg(''), 5000);
       }
     } catch (e) {
       console.error('Bulk delete failed', e);
@@ -247,10 +260,9 @@ export default function StudentsPage() {
         credentials: data.credentials || []
       });
       if (data.success > 0) {
-        console.log('Import successful, reloading page...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        const r = await fetch('/api/students');
+        const d = await r.json();
+        setStudents(Array.isArray(d) ? d : []);
       }
     } catch (err) {
       console.error('Bulk import error:', err);

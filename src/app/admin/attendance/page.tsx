@@ -163,7 +163,7 @@ export default function AttendancePage() {
     await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
     setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
     setLoading(false);
-    setTimeout(() => window.location.reload(), 1000);
+    setTimeout(() => setSavedMsg(''), 3000);
   };
 
   const fetchAbsentStudents = async () => {
