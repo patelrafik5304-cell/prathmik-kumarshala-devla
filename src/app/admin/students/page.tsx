@@ -322,6 +322,7 @@ export default function StudentsPage() {
     
     // Use stored passwords (from import) or show placeholder
     const credsMap = studentPasswords;
+    console.log('PDF: studentPasswords size:', credsMap.size);
     
     let html = `
       <!DOCTYPE html>
