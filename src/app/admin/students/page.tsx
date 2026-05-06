@@ -249,9 +249,8 @@ export default function StudentsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ students: csvRows }),
       });
-      console.log('Response status:', res.status);
       const data = await res.json();
-      console.log('Response data:', data);
+      console.log('Response:', data);
       setCsvResult({ 
         success: data.success, 
         total: csvRows.length, 
