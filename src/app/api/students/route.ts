@@ -111,7 +111,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  console.log('[Students DELETE] Request received:', req.url);
+  console.log('[Students DELETE] Handler invoked at', new Date().toISOString(), 'URL:', req.url);
   try {
     const db = getAdminDb();
     const auth = getAdminAuth();
