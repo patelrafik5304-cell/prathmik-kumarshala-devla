@@ -111,12 +111,14 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  console.log('[Students DELETE] Request received:', req.url);
   try {
     const db = getAdminDb();
     const auth = getAdminAuth();
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const className = searchParams.get('class');
+    console.log('[Students DELETE] id:', id, 'className:', className);
 
     // SINGLE DELETE
     if (id) {
