@@ -243,14 +243,13 @@ export default function StudentsPage() {
     if (csvRows.length === 0) return;
     setCsvLoading(true);
     try {
-      console.log('Uploading', csvRows.length, 'students...');
       const res = await fetch('/api/students/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ students: csvRows }),
       });
       const data = await res.json();
-      console.log('Response:', data);
+      console.log('Bulk import response:', data);
       setCsvResult({ 
         success: data.success, 
         total: csvRows.length, 
@@ -259,10 +258,14 @@ export default function StudentsPage() {
       });
       if (data.success > 0) {
         console.log('Refreshing student list...');
-        const r = await fetch('/api/students');
-        const d = await r.json();
-        console.log('Fetched', d.length, 'students');
-        setStudents(Array.isArray(d) ? d : []);
+        try {
+          const r = await fetch('/api/students');
+          const d = await r.json();
+          console.log('Fetched', d.length, 'students');
+          setStudents(Array.isArray(d) ? d : []);
+        } catch (refreshErr) {
+          console.error('Failed to refresh student list:', refreshErr);
+        }
       }
     } catch (err) {
       console.error('Bulk import error:', err);
