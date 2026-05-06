@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (saved) {
       try {
         const parsedUser = JSON.parse(saved);
-        if (parsedUser?.role && parsedUser.role !== 'admin') {
+        if (parsedUser?.role) {
           setUser(parsedUser);
         }
       } catch {}
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const userObj = { username: data.username, name: data.name || 'Admin', role: data.role, class: data.class || '' };
     setUser(userObj);
-    if (remember && data.role !== 'admin') {
+    if (remember) {
       localStorage.setItem('authUser', JSON.stringify(userObj));
     }
     router.push(data.role === 'admin' ? '/admin' : data.role === 'staff' ? '/staff' : '/student');
