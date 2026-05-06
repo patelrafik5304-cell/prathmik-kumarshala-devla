@@ -143,50 +143,48 @@ export async function DELETE(req: NextRequest) {
 
     // BULK DELETE BY CLASS
     if (className) {
-      // Try multiple class formats
-      const classFormats: string[] = [];
-      if (className === '0') classFormats.push('BALVATIKA');
-      if (className.startsWith('Class ')) classFormats.push(className);
-      classFormats.push(`Class ${className}`);
-      classFormats.push(className);
+      console.log('[Students DELETE] Bulk delete for className:', className);
       
-      console.log('[Students DELETE] Trying class formats:', classFormats);
-      
-      // Debug: Check all students and their classes
+      // Get all students to find correct class format
       const allStudents = await db.collection('students').get();
-      console.log('[Students DELETE] Total students:', allStudents.size);
       const uniqueClasses = new Set<string>();
       allStudents.docs.forEach(doc => {
         const c = doc.data().class;
         if (c) uniqueClasses.add(c);
       });
-      console.log('[Students DELETE] Unique classes in DB:', Array.from(uniqueClasses));
       
-      let snapshot: FirebaseFirestore.QuerySnapshot | null = null;
-      let classValue = '';
+      console.log('[Students DELETE] Existing classes:', Array.from(uniqueClasses));
       
-      for (const fmt of classFormats) {
-        snapshot = await db.collection('students').where('class', '==', fmt).get();
-        console.log(`[Students DELETE] Format "${fmt}" found ${snapshot.size} students`);
-        if (!snapshot.empty) {
-          classValue = fmt;
-          break;
+      // Find students matching this class
+      let targetClass = className;
+      if (!Array.from(uniqueClasses).includes(className)) {
+        const withPrefix = `Class ${className}`;
+        if (Array.from(uniqueClasses).includes(withPrefix)) {
+          targetClass = withPrefix;
+        } else if (className.startsWith('Class ')) {
+          const withoutPrefix = className.replace('Class ', '');
+          if (Array.from(uniqueClasses).includes(withoutPrefix)) {
+            targetClass = withoutPrefix;
+          }
         }
       }
       
-      if (!snapshot || snapshot.empty) {
-        const existingClassesArr = Array.from(uniqueClasses);
+      console.log('[Students DELETE] Using targetClass:', targetClass);
+      
+      const snapshot = await db.collection('students').where('class', '==', targetClass).get();
+      
+      if (snapshot.empty) {
         return NextResponse.json({ 
-          error: `No students found in class ${className}. Tried formats: ${classFormats.join(', ')}`,
+          error: `No students found in class "${targetClass}"`,
           totalStudents: allStudents.size,
-          existingClasses: existingClassesArr
+          existingClasses: Array.from(uniqueClasses)
         }, { status: 404 });
       }
 
       const batch = db.batch();
-      const authDeletes: Promise<void>[] = [];
+      const authDeletes: Promise<any>[] = [];
 
-        snapshot.docs.forEach((doc) => {
+      snapshot.docs.forEach((doc) => {
         const data = doc.data();
         if (data.email) {
           try {
@@ -205,7 +203,7 @@ export async function DELETE(req: NextRequest) {
 
       // CASCADE: Delete attendance records for this class
       const attendanceSnapshot = await db.collection('attendance')
-        .where('class', '==', classValue)
+        .where('class', '==', targetClass)
         .get();
       if (!attendanceSnapshot.empty) {
         const attendanceBatch = db.batch();
@@ -215,7 +213,7 @@ export async function DELETE(req: NextRequest) {
 
       // CASCADE: Delete results records for this class
       const resultsSnapshot = await db.collection('results')
-        .where('class', '==', classValue)
+        .where('class', '==', targetClass)
         .get();
       if (!resultsSnapshot.empty) {
         const resultsBatch = db.batch();
@@ -223,12 +221,12 @@ export async function DELETE(req: NextRequest) {
         await resultsBatch.commit();
       }
 
-      const displayClass = className === '0' ? 'BALVATIKA' : classValue;
+      const displayClass = targetClass === '0' ? 'BALVATIKA' : targetClass;
 
       return NextResponse.json({
         success: true,
         deletedCount: snapshot.size,
-        className,
+        className: targetClass,
         message: `Deleted ${snapshot.size} students from ${displayClass}`,
       });
     }
