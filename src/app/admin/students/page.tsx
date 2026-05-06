@@ -266,8 +266,9 @@ export default function StudentsPage() {
         try {
           const r = await fetch('/api/students');
           const d = await r.json();
-          console.log('Fetched', d.length, 'students');
+          console.log('Fetched', d.length, 'students', d);
           setStudents(Array.isArray(d) ? d : []);
+          console.log('Called setStudents with', Array.isArray(d) ? d.length : 0, 'students');
         } catch (refreshErr) {
           console.error('Failed to refresh student list:', refreshErr);
         }
