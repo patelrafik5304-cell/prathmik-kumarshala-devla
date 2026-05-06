@@ -85,8 +85,8 @@ export async function POST(req: NextRequest) {
     // Batch write to Firestore
     await batch.commit();
 
-    // Create Firebase Auth users (after Firestore success)
-    for (const userData of usersToCreate) {
+    // Create Firebase Auth users in parallel (after Firestore success)
+    const authPromises = usersToCreate.map(async (userData) => {
       try {
         const userRecord = await auth.createUser({ 
           email: userData.email, 
@@ -97,7 +97,9 @@ export async function POST(req: NextRequest) {
       } catch (e: any) {
         console.error('Auth creation failed for', userData.username, e.message);
       }
-    }
+    });
+
+    await Promise.all(authPromises);
 
     const successCount = results.filter(r => r.success).length;
     const errors = results.filter(r => !r.success).map(r => `${r.name} (${r.childUid}): ${r.error}`);
