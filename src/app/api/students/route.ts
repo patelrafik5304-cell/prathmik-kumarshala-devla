@@ -39,13 +39,8 @@ async function getCount(): Promise<number> {
   return snapshot.data()?.count || 0;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const db = getAdminDb();
     const snapshot = await db.collection('students').get();
     const students = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
