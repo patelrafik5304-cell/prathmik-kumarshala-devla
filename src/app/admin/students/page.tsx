@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check, FileDown } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -303,71 +303,6 @@ export default function StudentsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const downloadStudentPDF = () => {
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const studentsToShow = filtered;
-    
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Student Credentials</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          h1 { text-align: center; color: #1e3a8a; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #1e3a8a; color: white; padding: 10px; text-align: left; }
-          td { padding: 10px; border-bottom: 1px solid #ddd; }
-          tr:hover { background: #f5f5f5; }
-          .info { margin-bottom: 10px; color: #666; }
-        </style>
-      </head>
-      <body>
-        <h1>Student Credentials Report</h1>
-        <p class="info">Generated on ${new Date().toLocaleDateString()}</p>
-        <p class="info">Total Students: ${studentsToShow.length}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Password</th>
-              <th>Class</th>
-            </tr>
-          </thead>
-          <tbody>
-    `;
-
-    studentsToShow.forEach(student => {
-      // Use plainPassword from DB (stored temporarily for new students)
-      const plainPassword = student.plainPassword || '[Password not available - Re-import students to get passwords]';
-      html += `
-        <tr>
-          <td>${student.name}</td>
-          <td>${student.username}</td>
-          <td>${plainPassword}</td>
-          <td>${student.class === '0' ? 'BALVATIKA' : 'Class ' + student.class}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-          </tbody>
-        </table>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
-  };
-
   const getClassDisplay = (cls: string) => cls === '0' ? 'BALVATIKA' : `Class ${cls}`;
 
   return (
@@ -380,9 +315,6 @@ export default function StudentsPage() {
         
         {/* Mobile action bar - visible on small screens */}
         <div className="flex sm:hidden gap-2">
-          <Button variant="secondary" onClick={downloadStudentPDF} className="flex-1 justify-center py-3 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100">
-            <FileDown className="w-5 h-5" /> Download List
-          </Button>
           <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 justify-center py-3">
             <Upload className="w-5 h-5" /> Upload CSV
           </Button>
@@ -393,13 +325,20 @@ export default function StudentsPage() {
         
         {/* Desktop buttons - hidden on mobile */}
         <div className="hidden sm:flex gap-2">
-          <Button variant="secondary" onClick={downloadStudentPDF} className="justify-center">
-            <FileDown className="w-4 h-4" /> Download List PDF
-          </Button>
           <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center">
             <Upload className="w-4 h-4" /> Upload CSV
           </Button>
-          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="justify-center">
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }}>
+            <Plus className="w-4 h-4" /> Add Student
+          </Button>
+        </div>
+        
+        {/* Desktop buttons - hidden on mobile */}
+        <div className="hidden sm:flex gap-2">
+          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center">
+            <Upload className="w-4 h-4" /> Upload CSV
+          </Button>
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }}>
             <Plus className="w-4 h-4" /> Add Student
           </Button>
         </div>
