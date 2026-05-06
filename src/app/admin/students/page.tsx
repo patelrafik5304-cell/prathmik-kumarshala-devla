@@ -1,5 +1,6 @@
 ﻿'use client';
 
+// Trigger Vercel redeploy - removed middleware.ts
 import { useState, useEffect } from 'react';
 import { Search, Plus, Eye, EyeOff, X, User, Upload, Download, FileSpreadsheet, Trash2, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
