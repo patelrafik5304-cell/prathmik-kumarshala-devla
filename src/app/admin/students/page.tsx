@@ -138,6 +138,7 @@ export default function StudentsPage() {
       const data = await res.json();
       console.log('Response data:', data);
       if (data.success) {
+        setShowBulkDeleteModal(false);
         setBulkDeleteCount(data.deletedCount);
         const displayClass = bulkDeleteClass === '0' ? 'BALVATIKA' : `Class ${bulkDeleteClass}`;
         setSavedMsg(`Deleted ${data.deletedCount} students from ${displayClass}`);
