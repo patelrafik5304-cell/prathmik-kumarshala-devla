@@ -46,6 +46,7 @@ export default function StudentsPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[]; done?: boolean; credentials?: Array<{ name: string; username: string; password: string }> } | null>(null);
+  const [studentPasswords, setStudentPasswords] = useState<Map<string, string>>(new Map());
   const [bulkDeleteClass, setBulkDeleteClass] = useState('');
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
@@ -275,6 +276,16 @@ export default function StudentsPage() {
         const r = await fetch('/api/students');
         const d = await r.json();
         setStudents(Array.isArray(d) ? d : []);
+        
+        // Store plain passwords for PDF download
+        if (csvResult?.credentials) {
+          const newMap = new Map(studentPasswords);
+          csvResult.credentials.forEach(c => {
+            newMap.set(c.username, c.password);
+          });
+          setStudentPasswords(newMap);
+        }
+        
         setCsvResult({ 
           success: csvResult?.success || 0, 
           total: csvResult?.total || 0, 
@@ -307,6 +318,10 @@ export default function StudentsPage() {
     if (!printWindow) return;
 
     const studentsToShow = filtered;
+    
+    // Use stored passwords (from import) or show placeholder
+    const credsMap = studentPasswords;
+    
     let html = `
       <!DOCTYPE html>
       <html>
@@ -339,11 +354,13 @@ export default function StudentsPage() {
     `;
 
     studentsToShow.forEach(student => {
+      // Use plain password from import if available, otherwise show placeholder
+      const plainPassword = credsMap.get(student.username) || '[See import credentials]';
       html += `
         <tr>
           <td>${student.name}</td>
           <td>${student.username}</td>
-          <td>${student.password}</td>
+          <td>${plainPassword}</td>
           <td>${student.class === '0' ? 'BALVATIKA' : 'Class ' + student.class}</td>
         </tr>
       `;
