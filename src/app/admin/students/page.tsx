@@ -63,12 +63,17 @@ export default function StudentsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/students').then((r) => r.json()).then((data) => {
-      console.log('Initial load:', data.length, 'students');
-      setStudents(Array.isArray(data) ? data : []);
-    }).catch(err => {
-      console.error('Failed to fetch students:', err);
-    });
+    const loadStudents = async () => {
+      try {
+        const r = await fetch('/api/students');
+        const data = await r.json();
+        console.log('Loaded', data.length, 'students');
+        setStudents(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Failed to fetch students:', err);
+      }
+    };
+    loadStudents();
   }, []);
 
   const filtered = students.filter(
