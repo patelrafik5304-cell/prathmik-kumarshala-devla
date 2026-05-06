@@ -45,7 +45,7 @@ export default function StudentsPage() {
   const [csvRows, setCsvRows] = useState<CsvRow[]>([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [csvLoading, setCsvLoading] = useState(false);
-  const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[] } | null>(null);
+  const [csvResult, setCsvResult] = useState<{ success: number; total: number; errors: string[]; credentials?: Array<{ name: string; username: string; password: string }> } | null>(null);
   const [bulkDeleteClass, setBulkDeleteClass] = useState('');
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteCount, setBulkDeleteCount] = useState(0);
