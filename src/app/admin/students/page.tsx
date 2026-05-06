@@ -750,9 +750,9 @@ export default function StudentsPage() {
               {csvLoading ? 'Importing...' : 'Import All'}
             </Button>
             {csvResult && csvResult.success > 0 ? (
-              <Button variant="secondary" className="flex-1" onClick={() => { setShowCsvModal(false); setCsvResult(null); }}>Done</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => { setShowCsvModal(false); }}>Done</Button>
             ) : (
-              <Button variant="secondary" className="flex-1" onClick={() => setShowCsvModal(false)}>Close</Button>
+              <Button variant="secondary" className="flex-1" onClick={() => { setShowCsvModal(false); setCsvResult(null); }}>Close</Button>
             )}
           </div>
         </div>
