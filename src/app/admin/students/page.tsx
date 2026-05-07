@@ -322,15 +322,6 @@ export default function StudentsPage() {
           </Button>
         </div>
         
-        {/* Desktop buttons - hidden on mobile */}
-        <div className="hidden sm:flex gap-2">
-          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center">
-            <Upload className="w-4 h-4" /> Upload CSV
-          </Button>
-          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }}>
-            <Plus className="w-4 h-4" /> Add Student
-          </Button>
-        </div>
       </div>
 
       <Card className="p-4 mb-6">
