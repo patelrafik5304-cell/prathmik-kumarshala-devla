@@ -138,7 +138,7 @@ export default function AttendancePage() {
   }, [selectedClass, date, filteredStudents.length]);
 
   const handleAttendance = (studentId: string, status: string) => {
-    setAttendance({ ...attendance, [studentId]: status });
+    setAttendance((prev) => ({ ...prev, [studentId]: status }));
   };
 
   const handleSubmit = async () => {
@@ -153,14 +153,16 @@ export default function AttendancePage() {
     setLoading(true);
     setSavedMsg('');
     const records = filteredStudents.map((student) => ({
-      studentId: student.id,
       studentUsername: student.username,
       studentName: student.name,
       class: student.class,
       date,
       status: attendance[student.id] || 'present',
     }));
-    await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
+    console.log('[Attendance] Saving records:', records);
+    const res = await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
+    const data = await res.json();
+    console.log('[Attendance] Save response:', data);
     setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
     setLoading(false);
     setTimeout(() => setSavedMsg(''), 3000);
