@@ -280,3 +280,8 @@ img, video, canvas {
     min-height: 100dvh !important;
   }
 }
+
+/* Password masking */
+.password-masked {
+  -webkit-text-security: disc;
+}
