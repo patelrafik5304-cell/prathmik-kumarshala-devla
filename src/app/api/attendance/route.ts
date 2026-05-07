@@ -15,13 +15,16 @@ export async function GET(req: NextRequest) {
       .where('type', 'in', ['holiday', 'vacation'])
       .get();
     
-    const holidayRanges = announcementsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        startDate: data.startDate || data.date,
-        endDate: data.endDate || data.date
-      };
-    }).filter(range => range.startDate && range.endDate);
+    const holidayRanges = announcementsSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          startDate: data.startDate || data.date,
+          endDate: data.endDate || data.date,
+          isActive: data.isActive
+        };
+      })
+      .filter(range => range.isActive !== false && range.startDate && range.endDate);
 
     let query: any = db.collection('attendance');
 
@@ -73,15 +76,21 @@ export async function POST(req: NextRequest) {
       .where('type', 'in', ['holiday', 'vacation'])
       .get();
     
-    const holidayRanges = announcementsSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        startDate: data.startDate || data.date,
-        endDate: data.endDate || data.date
-      };
-    }).filter(range => range.startDate && range.endDate);
+    const holidayRanges = announcementsSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title || 'Holiday/Vacation',
+          type: data.type,
+          isActive: data.isActive,
+          startDate: data.startDate || data.date,
+          endDate: data.endDate || data.date
+        };
+      })
+      .filter(range => range.isActive !== false && range.startDate && range.endDate);
 
-    console.log('[Attendance POST] Holiday ranges:', holidayRanges);
+    console.log('[Attendance POST] Active holiday ranges:', holidayRanges);
 
     // Check if any record falls within a holiday/vacation period
     const invalidRecords = records.filter(record => {
@@ -92,9 +101,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (invalidRecords.length > 0) {
-      console.log('[Attendance POST] Invalid records (holiday):', invalidRecords);
+      const blockingHoliday = holidayRanges.find(range => 
+        invalidRecords[0].date >= range.startDate && invalidRecords[0].date <= range.endDate
+      );
+      const reason = blockingHoliday 
+        ? `Attendance cannot be marked: "${blockingHoliday.title}" (${blockingHoliday.type}) is active from ${blockingHoliday.startDate} to ${blockingHoliday.endDate}`
+        : 'Attendance cannot be filled for holiday/vacation dates';
+      console.log('[Attendance POST] Blocked by:', reason);
       return NextResponse.json(
-        { error: 'Attendance cannot be filled for holiday/vacation dates' },
+        { error: reason },
         { status: 400 }
       );
     }
