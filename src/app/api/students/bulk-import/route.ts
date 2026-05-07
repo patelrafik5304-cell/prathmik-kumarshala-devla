@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
           username,
           email,
           password: hashedPassword,
+          plainPassword: plainPassword,
           photo: '',
           createdAt: new Date().toISOString(),
         });
