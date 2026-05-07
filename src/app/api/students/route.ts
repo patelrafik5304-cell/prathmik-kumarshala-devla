@@ -45,7 +45,7 @@ export async function GET() {
     const snapshot = await db.collection('students').get();
     const students = snapshot.docs.map(doc => {
       const data = doc.data();
-      const { password, plainPassword, ...safeData } = data;
+      const { password, ...safeData } = data;
       return { ...safeData, id: doc.id };
     });
     students.sort((a: any, b: any) => {
@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
       username,
       email,
       password: hashedPassword,
+      plainPassword: password,
       photo: body.photo || '',
       createdAt: new Date().toISOString(),
     });
