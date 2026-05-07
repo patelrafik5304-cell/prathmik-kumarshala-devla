@@ -14,22 +14,31 @@ export default function StudentProfile() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/students/me?username=${user.username}`).then((r) => r.json()).then((data) => {
-      if (data.error) {
-        console.error('Failed to fetch profile:', data.error);
-        return;
-      }
-      setStudent(data);
-    });
-    fetch(`/api/attendance?studentUsername=${user.username}`).then((r) => r.json()).then((data) => {
-      const records = Array.isArray(data) ? data : [];
-      const total = records.length;
-      const present = records.filter((r: any) => r.status === 'present').length;
-      setAttendance(total > 0 ? Math.round((present / total) * 100) : 0);
-    });
+    console.log('Fetching profile for username:', user.username);
+    fetch(`/api/students/me?username=${user.username}`)
+      .then((r) => r.json())
+      .then((data) => {
+        console.log('Profile API response:', data);
+        if (data.error) {
+          console.error('Failed to fetch profile:', data.error);
+          return;
+        }
+        setStudent(data);
+      })
+      .catch((err) => console.error('Profile fetch error:', err));
+    fetch(`/api/attendance?studentUsername=${user.username}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const records = Array.isArray(data) ? data : [];
+        const total = records.length;
+        const present = records.filter((r: any) => r.status === 'present').length;
+        setAttendance(total > 0 ? Math.round((present / total) * 100) : 0);
+      })
+      .catch((err) => console.error('Attendance fetch error:', err));
   }, [user]);
 
-  if (!user || !student) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading profile...</p></div>;
+  if (!user) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading user...</p></div>;
+  if (!student) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading profile... (username: {user.username})</p></div>;
 
   const attendanceColor = attendance >= 75 ? 'success' : attendance >= 50 ? 'warning' : 'danger';
 
