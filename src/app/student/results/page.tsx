@@ -25,13 +25,25 @@ export default function StudentResults() {
   const { user } = useAuth();
   const [results, setResults] = useState<Result[]>([]);
   const [expandedExam, setExpandedExam] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/results?studentUsername=${user.username}&published=true`).then((r) => r.json()).then((data) => {
-      const all = Array.isArray(data) ? data : [];
-      setResults(all);
-    });
+    fetch(`/api/results?studentUsername=${user.username}&published=true`)
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to fetch results');
+        return r.json();
+      })
+      .then((data) => {
+        setResults(Array.isArray(data) ? data : []);
+        setError('');
+      })
+      .catch((e) => {
+        console.error('Failed to fetch results:', e);
+        setError('Failed to load results. Please refresh the page.');
+      })
+      .finally(() => setLoading(false));
   }, [user]);
 
   const groupedByExam = results.reduce<Record<string, Result[]>>((acc, r) => {
@@ -117,7 +129,11 @@ export default function StudentResults() {
     doc.save(`${user?.name || 'Student'}_All_Results.pdf`);
   };
 
-  if (results.length === 0) return <div><div className="mb-8"><h1 className="text-2xl lg:text-3xl font-bold text-gray-800">My Results</h1><p className="text-gray-500 mt-1 text-sm">View and download your exam results</p></div><EmptyState icon={<FileText className="w-8 h-8" />} title="No results uploaded yet" description="Contact your teacher" /></div>;
+  if (loading) return <div><div className="mb-8"><h1 className="text-2xl lg:text-3xl font-bold text-gray-800">My Results</h1><p className="text-gray-500 mt-1 text-sm">View and download your exam results</p></div><Card className="p-12 text-center"><div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3"></div><p className="text-gray-500">Loading results...</p></Card></div>;
+
+  if (error) return <div><div className="mb-8"><h1 className="text-2xl lg:text-3xl font-bold text-gray-800">My Results</h1><p className="text-gray-500 mt-1 text-sm">View and download your exam results</p></div><EmptyState icon={<FileText className="w-8 h-8" />} title="Error loading results" description={error} /></div>;
+
+  if (results.length === 0) return <div><div className="mb-8"><h1 className="text-2xl lg:text-3xl font-bold text-gray-800">My Results</h1><p className="text-gray-500 mt-1 text-sm">View and download your exam results</p></div><EmptyState icon={<FileText className="w-8 h-8" />} title="No results uploaded yet" description="Your results will appear here once your teacher uploads and publishes them." /></div>;
 
   return (
     <div>

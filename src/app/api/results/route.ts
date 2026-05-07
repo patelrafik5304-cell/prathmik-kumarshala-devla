@@ -5,11 +5,6 @@ const BATCH_LIMIT = 400;
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const db = getAdminDb();
     const { searchParams } = new URL(req.url);
     const studentUsername = searchParams.get('studentUsername');
@@ -84,7 +79,7 @@ export async function POST(req: NextRequest) {
         for (const record of records) {
           const { id, ...rest } = record;
           const ref = db.collection('results').doc();
-          batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
+          batch.set(ref, { ...rest, published: true, createdAt: new Date().toISOString() });
           opCount++;
           if (opCount >= BATCH_LIMIT) {
             await batch.commit();
@@ -102,7 +97,7 @@ export async function POST(req: NextRequest) {
         records.forEach((record: any) => {
           const { id, ...rest } = record;
           const ref = db.collection('results').doc();
-          batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
+          batch.set(ref, { ...rest, published: true, createdAt: new Date().toISOString() });
         });
         await batch.commit();
       }
@@ -116,7 +111,7 @@ export async function POST(req: NextRequest) {
     items.forEach(item => {
       const { id, ...rest } = item;
       const ref = db.collection('results').doc();
-      batch.set(ref, { ...rest, published: false, createdAt: new Date().toISOString() });
+      batch.set(ref, { ...rest, published: true, createdAt: new Date().toISOString() });
     });
     await batch.commit();
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });

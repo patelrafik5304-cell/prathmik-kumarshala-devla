@@ -92,11 +92,15 @@ export default function ResultsPage() {
 
   useEffect(() => {
     fetch('/api/results')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to fetch results');
+        return r.json();
+      })
       .then((data) => {
         const resultsWithDefaults = Array.isArray(data) ? data.map((r: any) => ({ ...r, published: r.published ?? false })) : [];
         setResults(resultsWithDefaults);
-      });
+      })
+      .catch((e) => console.error('Failed to fetch results:', e));
     fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
     fetch('/api/settings').then((r) => r.json()).then((data) => {
       if (data && typeof data === 'object') {
