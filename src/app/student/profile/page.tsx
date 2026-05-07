@@ -11,9 +11,13 @@ export default function StudentProfile() {
   const [student, setStudent] = useState<{ name: string; username: string; class: string; photo?: string; dateOfBirth?: string; parentName?: string; contactNumber?: string; address?: string } | null>(null);
   const [attendance, setAttendance] = useState(0);
   const [showPhoto, setShowPhoto] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
+    setLoading(true);
+    setError(null);
     console.log('Fetching profile for username:', user.username);
     fetch(`/api/students/me?username=${user.username}`)
       .then((r) => r.json())
@@ -21,11 +25,18 @@ export default function StudentProfile() {
         console.log('Profile API response:', data);
         if (data.error) {
           console.error('Failed to fetch profile:', data.error);
+          setError(data.error);
+          setLoading(false);
           return;
         }
         setStudent(data);
+        setLoading(false);
       })
-      .catch((err) => console.error('Profile fetch error:', err));
+      .catch((err) => {
+        console.error('Profile fetch error:', err);
+        setError('Failed to load profile');
+        setLoading(false);
+      });
     fetch(`/api/attendance?studentUsername=${user.username}`)
       .then((r) => r.json())
       .then((data) => {
@@ -38,7 +49,9 @@ export default function StudentProfile() {
   }, [user]);
 
   if (!user) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading user...</p></div>;
-  if (!student) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading profile... (username: {user.username})</p></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><p className="text-gray-500">Loading profile... (username: {user.username})</p></div>;
+  if (error) return <div className="flex items-center justify-center h-64"><p className="text-red-500">Error: {error}</p></div>;
+  if (!student) return null;
 
   const attendanceColor = attendance >= 75 ? 'success' : attendance >= 50 ? 'warning' : 'danger';
 
