@@ -55,6 +55,7 @@ export default function AttendancePage() {
   const [attendance, setAttendance] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [savedMsg, setSavedMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [viewMode, setViewMode] = useState<'mark' | 'view-absent'>('mark');
   const [absentStudents, setAbsentStudents] = useState<any[]>([]);
   const [loadingAbsent, setLoadingAbsent] = useState(false);
@@ -152,33 +153,57 @@ export default function AttendancePage() {
     }
     setLoading(true);
     setSavedMsg('');
-    const records = filteredStudents.map((student) => ({
-      studentUsername: student.username,
-      studentName: student.name,
-      class: student.class,
-      date,
-      status: attendance[student.id] || 'present',
-    }));
-    console.log('[Attendance] Saving records:', records);
-    const res = await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(records) });
-    const data = await res.json();
-    console.log('[Attendance] Save response:', data);
-    setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
-    setLoading(false);
-    setTimeout(() => setSavedMsg(''), 3000);
+    setErrorMsg('');
+    try {
+      const records = filteredStudents.map((student) => ({
+        studentUsername: student.username,
+        studentName: student.name,
+        class: student.class,
+        date,
+        status: attendance[student.id] || 'present',
+      }));
+      console.log('[Attendance] Saving records:', records);
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(records),
+      });
+      const data = await res.json();
+      console.log('[Attendance] Save response:', data);
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to save attendance');
+      }
+      setSavedMsg(`Attendance saved for ${filteredStudents.length} students`);
+    } catch (err: any) {
+      console.error('[Attendance] Save error:', err);
+      setErrorMsg(err.message || 'Failed to save attendance');
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSavedMsg(''), 3000);
+      setTimeout(() => setErrorMsg(''), 5000);
+    }
   };
 
   const fetchAbsentStudents = async () => {
     setLoadingAbsent(true);
+    setAbsentStudents([]);
     try {
+      console.log('[Attendance] Fetching absent students for date:', date);
       const res = await fetch(`/api/attendance?date=${date}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch attendance data');
+      }
       const data = await res.json();
+      console.log('[Attendance] Fetched records:', data.length, data);
       const absent = data.filter((r: any) => r.status === 'absent');
+      console.log('[Attendance] Absent students:', absent.length, absent);
       setAbsentStudents(absent);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to fetch absent students', e);
+      setErrorMsg(e.message || 'Failed to fetch absent students');
+    } finally {
+      setLoadingAbsent(false);
     }
-    setLoadingAbsent(false);
   };
 
   const presentCount = Object.values(attendance).filter((v) => v === 'present').length;
@@ -221,6 +246,12 @@ export default function AttendancePage() {
         </div>
       )}
 
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 text-sm animate-slide-down flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {errorMsg}
+        </div>
+      )}
+
       <Card className="p-6 mb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
@@ -232,7 +263,7 @@ export default function AttendancePage() {
                 value={date}
                 min={dateRange.min}
                 max={dateRange.max}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => { setDate(e.target.value); setAbsentStudents([]); }}
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all"
               />
             </div>
@@ -271,7 +302,7 @@ export default function AttendancePage() {
                     value={date}
                     min={dateRange.min}
                     max={dateRange.max}
-                    onChange={(e) => setDate(e.target.value)}
+                onChange={(e) => { setDate(e.target.value); setAbsentStudents([]); }}
                     className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition-all"
                   />
                 </div>
@@ -319,7 +350,7 @@ export default function AttendancePage() {
           {!loadingAbsent && absentStudents.length === 0 && date && (
             <Card className="p-12 text-center">
               <XIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No absent records found for {date}. Click "View Absent Students" to check.</p>
+              <p className="text-gray-500">No absent records found for {date}.</p>
             </Card>
           )}
         </div>

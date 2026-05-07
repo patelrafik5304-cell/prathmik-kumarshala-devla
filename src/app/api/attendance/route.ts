@@ -65,6 +65,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const records = Array.isArray(body) ? body : [body];
 
+    console.log('[Attendance POST] Received', records.length, 'records');
+    console.log('[Attendance POST] First record:', JSON.stringify(records[0]));
+
     // Fetch holiday/vacation announcements to validate dates
     const announcementsSnapshot = await db.collection('announcements')
       .where('type', 'in', ['holiday', 'vacation'])
@@ -78,6 +81,8 @@ export async function POST(req: NextRequest) {
       };
     }).filter(range => range.startDate && range.endDate);
 
+    console.log('[Attendance POST] Holiday ranges:', holidayRanges);
+
     // Check if any record falls within a holiday/vacation period
     const invalidRecords = records.filter(record => {
       const recordDate = record.date;
@@ -87,32 +92,48 @@ export async function POST(req: NextRequest) {
     });
 
     if (invalidRecords.length > 0) {
+      console.log('[Attendance POST] Invalid records (holiday):', invalidRecords);
       return NextResponse.json(
         { error: 'Attendance cannot be filled for holiday/vacation dates' },
         { status: 400 }
       );
     }
 
-    const snapshot = await db.collection('attendance').get();
-    const existing = snapshot.docs;
+    // Get existing records for the same date to delete them
+    const dateToUpdate = records[0]?.date;
+    console.log('[Attendance POST] Updating attendance for date:', dateToUpdate);
+    
+    const existingSnapshot = await db.collection('attendance')
+      .where('date', '==', dateToUpdate)
+      .get();
+    
+    console.log('[Attendance POST] Found', existingSnapshot.size, 'existing records for date');
 
     const batch = db.batch();
-    existing.forEach((doc: any) => {
-      const data = doc.data();
-      const shouldDelete = records.some((r: any) =>
-        data.studentUsername === r.studentUsername && data.date === r.date
-      );
-      if (shouldDelete) batch.delete(doc.ref);
+    
+    // Delete existing records for the same date
+    existingSnapshot.docs.forEach((doc: any) => {
+      console.log('[Attendance POST] Deleting doc:', doc.id);
+      batch.delete(doc.ref);
     });
 
+    // Add new records
     records.forEach((record) => {
       const ref = db.collection('attendance').doc();
+      console.log('[Attendance POST] Adding record:', record.studentUsername, record.status);
       batch.set(ref, { ...record, createdAt: new Date().toISOString() });
     });
+    
     await batch.commit();
+    console.log('[Attendance POST] Batch committed successfully');
 
-    console.log('[Attendance POST] Saved', records.length, 'records');
-    return NextResponse.json({ success: true, count: records.length }, { status: 201 });
+    // Verify the save
+    const verifySnapshot = await db.collection('attendance')
+      .where('date', '==', dateToUpdate)
+      .get();
+    console.log('[Attendance POST] Verification: Found', verifySnapshot.size, 'records after save');
+
+    return NextResponse.json({ success: true, count: records.length, saved: verifySnapshot.size }, { status: 201 });
   } catch (e: any) {
     console.error('[Attendance POST] Error:', e);
     return NextResponse.json({ error: e.message || 'Failed to save attendance' }, { status: 500 });
