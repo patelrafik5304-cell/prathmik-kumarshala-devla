@@ -159,7 +159,6 @@ export default function StudentResults() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="secondary" className="px-3 py-1.5 text-sm" onClick={(e) => { e.stopPropagation(); downloadReport(first); }}><Download className="w-3.5 h-3.5" /> PDF</Button>
                   {isExpanded ? <ChevronDown className="w-5 h-5 text-gray-400" /> : <ChevronRight className="w-5 h-5 text-gray-400" />}
                 </div>
               </button>
