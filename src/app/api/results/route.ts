@@ -28,9 +28,7 @@ export async function GET(req: NextRequest) {
     const snapshot = await query.get();
     let results = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
 
-    if (!studentUsername) {
-      results = results.filter((r: any) => !r.deletedAt);
-    }
+    results = results.filter((r: any) => !r.deletedAt);
 
     results.sort((a: any, b: any) => {
       const dateA = (a as any).createdAt || '';
