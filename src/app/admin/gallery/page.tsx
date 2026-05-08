@@ -34,10 +34,10 @@ export default function GalleryPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/gallery').then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])).finally(() => setLoading(false));
+    fetch(`/api/gallery?t=${Date.now()}`).then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])).finally(() => setLoading(false));
   }, []);
 
-  const refetch = () => { fetch('/api/gallery').then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])); };
+  const refetch = () => { fetch(`/api/gallery?t=${Date.now()}`).then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
