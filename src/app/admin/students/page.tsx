@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, FileSpreadsheet, Trash2, Check } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, FileSpreadsheet, Trash2, Check, Download } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -294,6 +294,23 @@ export default function StudentsPage() {
 
   const getClassDisplay = (cls: string) => cls === '0' ? 'BALVATIKA' : `Class ${cls}`;
 
+  const downloadCSV = () => {
+    const header = ['NAME', 'UID', 'CLASS'].join(',');
+    const rows = filtered.map((s) => [
+      `"${s.name}"`,
+      s.childUid,
+      getClassDisplay(s.class)
+    ].join(','));
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `students_${filterClass === 'all' ? 'all' : filterClass}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div className="flex flex-col gap-4 mb-8">
@@ -303,17 +320,23 @@ export default function StudentsPage() {
         </div>
         
         {/* Mobile action bar - visible on small screens */}
-        <div className="flex sm:hidden gap-2">
-          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="flex-1 justify-center py-3">
-            <Upload className="w-5 h-5" /> Upload CSV
+        <div className="grid grid-cols-2 sm:hidden gap-2">
+          <Button variant="secondary" onClick={downloadCSV} className="justify-center py-3">
+            <Download className="w-5 h-5" /> Generate
           </Button>
-          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="flex-1 justify-center py-3">
-            <Plus className="w-5 h-5" /> Add
+          <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center py-3">
+            <Upload className="w-5 h-5" /> Upload
+          </Button>
+          <Button variant="primary" onClick={() => { setEditingStudent(null); setForm({ name: '', childUid: '', class: '', photo: '' }); setShowModal(true); }} className="col-span-2 justify-center py-3">
+            <Plus className="w-5 h-5" /> Add Student
           </Button>
         </div>
         
         {/* Desktop buttons - hidden on mobile */}
         <div className="hidden sm:flex gap-2">
+          <Button variant="secondary" onClick={downloadCSV} className="justify-center">
+            <Download className="w-4 h-4" /> Generate CSV
+          </Button>
           <Button variant="secondary" onClick={() => { setShowCsvModal(true); setCsvRows([]); setCsvFile(null); setCsvResult(null); }} className="justify-center">
             <Upload className="w-4 h-4" /> Upload CSV
           </Button>
