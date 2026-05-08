@@ -83,7 +83,7 @@ export default function ResultsPage() {
     setClassSubjects(updated);
     setShowSubjectSettings(false);
     try {
-      await fetch('/api/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+      await fetch('/api/settings?doc=subjects', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
     } catch (err) {
       console.error('Failed to save settings:', err);
     }
@@ -101,7 +101,7 @@ export default function ResultsPage() {
       })
       .catch((e) => console.error('Failed to fetch results:', e));
     fetch('/api/students').then((r) => r.json()).then((data) => setStudents(Array.isArray(data) ? data : []));
-    fetch('/api/settings').then((r) => r.json()).then((data) => {
+    fetch('/api/settings?doc=subjects').then((r) => r.json()).then((data) => {
       if (data && typeof data === 'object') {
         setClassSubjects(data);
       }

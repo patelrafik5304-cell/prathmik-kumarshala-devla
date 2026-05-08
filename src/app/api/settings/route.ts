@@ -4,7 +4,9 @@ import { getAdminDb } from '@/lib/firebase-admin';
 export async function GET(req: NextRequest) {
   try {
     const db = getAdminDb();
-    const snapshot = await db.collection('settings').doc('subjects').get();
+    const { searchParams } = new URL(req.url);
+    const doc = searchParams.get('doc') || 'subjects';
+    const snapshot = await db.collection('settings').doc(doc).get();
     if (!snapshot.exists) {
       return NextResponse.json({});
     }
@@ -18,8 +20,10 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getAdminDb();
+    const { searchParams } = new URL(req.url);
+    const doc = searchParams.get('doc') || 'subjects';
     const body = await req.json();
-    await db.collection('settings').doc('subjects').set(body, { merge: true });
+    await db.collection('settings').doc(doc).set(body, { merge: true });
     return NextResponse.json({ success: true });
   } catch (e: any) {
     console.error('[Settings PUT] Error:', e);

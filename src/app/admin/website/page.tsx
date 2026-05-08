@@ -1,11 +1,11 @@
 ﻿'use client';
 
-import { useState } from 'react';
-import { Save, Globe } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Save, Globe, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 
-const initialSettings = {
+const defaultSettings = {
   schoolName: 'Prathmik Kumarshala',
   tagline: 'Excellence in Education',
   primaryColor: '#4F46E5',
@@ -18,11 +18,33 @@ const initialSettings = {
 };
 
 export default function WebsiteControl() {
-  const [settings, setSettings] = useState(initialSettings);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [saving, setSaving] = useState(false);
+  const [doneMsg, setDoneMsg] = useState('');
+
+  useEffect(() => {
+    fetch('/api/settings?doc=website').then((r) => r.json()).then((data) => {
+      if (data && Object.keys(data).length > 0) setSettings({ ...defaultSettings, ...data });
+    });
+  }, []);
 
   const handleChange = (key: string, value: any) => { setSettings({ ...settings, [key]: value }); };
 
-  const handleSave = () => { alert('Website settings saved successfully!'); console.log('Settings:', settings); };
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/settings?doc=website', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) });
+      if (res.ok) {
+        setDoneMsg('Website settings saved successfully!');
+        setTimeout(() => setDoneMsg(''), 4000);
+      } else {
+        alert('Failed to save settings');
+      }
+    } catch (err) {
+      alert('Failed to save settings');
+    }
+    setSaving(false);
+  };
 
   return (
     <div>
@@ -75,8 +97,15 @@ export default function WebsiteControl() {
         </Card>
       </div>
 
+      {doneMsg && (
+        <div className="mt-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-xl flex items-center gap-2 animate-slide-down">
+          <Check className="w-4 h-4" /> {doneMsg}
+          <button onClick={() => setDoneMsg('')} className="ml-auto underline text-sm">Done</button>
+        </div>
+      )}
+
       <div className="mt-6">
-        <Button onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
+        <Button onClick={handleSave} loading={saving}><Save className="w-4 h-4" /> Save Changes</Button>
       </div>
     </div>
   );
