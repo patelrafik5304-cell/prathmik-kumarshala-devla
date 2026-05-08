@@ -3,7 +3,9 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Sidebar from '@/components/ui/Sidebar';
+import dynamic from 'next/dynamic';
+
+const Sidebar = dynamic(() => import('@/components/ui/Sidebar'), { ssr: false });
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();

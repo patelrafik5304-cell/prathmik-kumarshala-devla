@@ -68,8 +68,9 @@ export default function StudentResults() {
     cells.forEach((c) => { doc.rect(c.x, y, c.width, 10); doc.text(c.text, c.x + 2, y + 7); });
   };
 
-  const downloadReport = (result: Result) => {
-    const doc = new (require('jspdf')).jsPDF();
+  const downloadReport = async (result: Result) => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const totalMarks = Object.values(result.subjects).reduce((sum, m) => sum + m, 0);
     const maxMarks = Object.values(result.subjects).length * 100;
@@ -93,8 +94,9 @@ export default function StudentResults() {
     doc.save(`${result.studentName}_${result.exam}_Report.pdf`);
   };
 
-  const downloadAllResults = () => {
-    const doc = new (require('jspdf')).jsPDF();
+  const downloadAllResults = async () => {
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const colWidths = [90, 30, 30]; const startX = 14; const rowHeight = 10;
     let y = 30;

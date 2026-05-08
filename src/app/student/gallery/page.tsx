@@ -43,7 +43,7 @@ export default function StudentGallery() {
             <Card key={item._id} className="overflow-hidden group cursor-pointer" onClick={() => setSelectedImage(item)}>
               <div className="h-48 overflow-hidden relative">
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img src={item.imageUrl} alt={item.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="h-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center"><ImageIcon className="w-12 h-12 text-white/50" /></div>
                 )}
@@ -66,7 +66,7 @@ export default function StudentGallery() {
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setSelectedImage(null)}>
           <button className="absolute top-4 right-4 text-white hover:text-gray-300"><X className="w-8 h-8" /></button>
           <div className="max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <img src={selectedImage.imageUrl} alt={selectedImage.title} className="w-full max-h-[80vh] object-contain rounded-t-xl animate-scale-in" />
+            <img src={selectedImage.imageUrl} alt={selectedImage.title} loading="lazy" className="w-full max-h-[80vh] object-contain rounded-t-xl animate-scale-in" />
             <div className="bg-white rounded-b-xl p-4 -mt-1">
               <h3 className="font-semibold text-gray-800">{selectedImage.title}</h3>
               <p className="text-sm text-gray-600 mt-1">{selectedImage.description}</p>

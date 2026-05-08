@@ -7,7 +7,6 @@ import Modal from '@/components/ui/Modal';
 import Badge from '@/components/ui/Badge';
 import Card from '@/components/ui/Card';
 import { useAuth } from '@/context/AuthContext';
-import * as XLSX from 'xlsx';
 
 interface Result {
   id: string;
@@ -162,7 +161,7 @@ export default function ResultsPage() {
       reader.onload = (ev) => { const text = ev.target?.result as string; parseCSVText(text); };
       reader.readAsText(file);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      reader.onload = (ev) => { const data = new Uint8Array(ev.target?.result as ArrayBuffer); const workbook = XLSX.read(data, { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet); parseJsonRows(json); };
+      reader.onload = async (ev) => { const XLSX = await import('xlsx'); const data = new Uint8Array(ev.target?.result as ArrayBuffer); const workbook = XLSX.read(data, { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet); parseJsonRows(json); };
       reader.readAsArrayBuffer(file);
     } else { alert('Please upload a .csv or .xlsx file.'); return; }
   };

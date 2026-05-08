@@ -89,7 +89,7 @@ export default function GalleryPage() {
             <Card key={img._id} className="overflow-hidden group">
               <div className="h-48 overflow-hidden relative cursor-pointer" onClick={() => setLightbox(img.imageUrl)}>
                 {img.imageUrl ? (
-                  <img src={img.imageUrl} alt={img.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img src={img.imageUrl} alt={img.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 ) : (
                   <div className="h-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
                     <ImageIcon className="w-12 h-12 text-white/50" />
@@ -137,7 +137,7 @@ export default function GalleryPage() {
       {lightbox && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-fade-in" onClick={() => setLightbox(null)}>
           <button className="absolute top-4 right-4 text-white hover:text-gray-300"><X className="w-8 h-8" /></button>
-          <img src={lightbox} alt="Gallery" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl animate-scale-in" />
+          <img src={lightbox} alt="Gallery" loading="lazy" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl animate-scale-in" />
         </div>
       )}
     </div>

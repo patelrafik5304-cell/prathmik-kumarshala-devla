@@ -63,6 +63,7 @@ export default function LoginPage() {
             <img
               src="/logo.jpeg"
               alt="Prathmik Kumarshala"
+              loading="lazy"
               className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover mx-auto logo-breathe"
             />
             <h1 className="text-3xl font-bold tracking-tight title-gradient">
