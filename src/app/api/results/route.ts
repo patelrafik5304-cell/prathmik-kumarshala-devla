@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const studentUsername = searchParams.get('studentUsername');
     const published = searchParams.get('published');
+    const classFilter = searchParams.get('class');
 
     let query: any = db.collection('results');
 
@@ -18,6 +19,10 @@ export async function GET(req: NextRequest) {
 
     if (published === 'true') {
       query = query.where('published', '==', true);
+    }
+
+    if (classFilter) {
+      query = query.where('class', '==', classFilter);
     }
 
     const snapshot = await query.get();

@@ -34,6 +34,7 @@ export default function StudentDashboard() {
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [recentResults, setRecentResults] = useState<{ exam: string; percentage: string; grade: string; subjects?: Record<string, number> }[]>([]);
+  const [topStudents, setTopStudents] = useState<{ name: string; percentage: string; grade: string }[]>([]);
   const [attendancePct, setAttendancePct] = useState<number | null>(null);
 
   useEffect(() => {
@@ -71,6 +72,53 @@ export default function StudentDashboard() {
           setAttendancePct(Math.round((present / myAttendance.length) * 100));
         }
       });
+
+    fetch(`/api/results?class=${user.class}&published=true`).then((r) => r.json()).then(async (data) => {
+      const all = Array.isArray(data) ? data : [];
+      if (all.length === 0) return;
+
+      const byExam: Record<string, any[]> = {};
+      all.forEach((r: any) => {
+        if (!byExam[r.exam]) byExam[r.exam] = [];
+        byExam[r.exam].push(r);
+      });
+
+      const examNames = Object.keys(byExam).sort((a, b) => {
+        const dateA = byExam[a][0]?.createdAt || '';
+        const dateB = byExam[b][0]?.createdAt || '';
+        return dateB.localeCompare(dateA);
+      });
+      const latestResults = byExam[examNames[0]];
+      if (!latestResults) return;
+
+      latestResults.sort((a: any, b: any) => parseFloat(b.percentage) - parseFloat(a.percentage));
+
+      const attendanceMap: Record<string, number> = {};
+      const seenPcts: Record<string, number> = {};
+      latestResults.forEach((r: any) => {
+        if (!seenPcts[r.percentage]) seenPcts[r.percentage] = 0;
+        seenPcts[r.percentage]++;
+      });
+
+      await Promise.all(latestResults.map(async (r: any) => {
+        if (seenPcts[r.percentage] <= 1) return;
+        try {
+          const attData = await fetch(`/api/attendance?studentUsername=${r.studentUsername}`).then(res => res.json());
+          const records = Array.isArray(attData) ? attData : [];
+          attendanceMap[r.studentUsername] = records.length > 0 ? (records.filter((a: any) => a.status === 'present').length / records.length) * 100 : 0;
+        } catch {
+          attendanceMap[r.studentUsername] = 0;
+        }
+      }));
+
+      latestResults.sort((a: any, b: any) => {
+        const pctDiff = parseFloat(b.percentage) - parseFloat(a.percentage);
+        if (pctDiff !== 0) return pctDiff;
+        return (attendanceMap[b.studentUsername] || 0) - (attendanceMap[a.studentUsername] || 0);
+      });
+
+      setTopStudents(latestResults.slice(0, 10).map((r: any) => ({ name: r.studentName, percentage: r.percentage, grade: r.grade })));
+    });
   }, [user]);
 
   if (!user) return null;
@@ -121,6 +169,40 @@ export default function StudentDashboard() {
                   </div>
                 );
               })}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Top 10 Students */}
+      {topStudents.length > 0 && (
+        <div className="mb-8 animate-slide-up">
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-500" />
+              Top 10 Students — {user.class === '0' ? 'BALVATIKA' : `Class ${user.class}`}
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">%</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Grade</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {topStudents.map((s, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-3 py-2.5 text-sm font-bold text-gray-400">{i + 1}</td>
+                      <td className="px-3 py-2.5 text-sm font-medium text-gray-800">{s.name}</td>
+                      <td className="px-3 py-2.5 text-sm font-semibold text-right text-primary">{s.percentage}</td>
+                      <td className="px-3 py-2.5 text-right"><Badge variant={s.grade === 'A+' || s.grade === 'A' ? 'success' : s.grade === 'B+' || s.grade === 'B' ? 'info' : s.grade === 'C' ? 'warning' : 'danger'}>{s.grade}</Badge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </Card>
         </div>
