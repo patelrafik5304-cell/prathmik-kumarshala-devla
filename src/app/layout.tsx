@@ -2,6 +2,7 @@
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import ThemeProvider from "@/components/ThemeProvider";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
@@ -40,7 +41,7 @@ export default function RootLayout({
         <script src="/watermark.js" />
       </head>
       <body className={poppins.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider><ThemeProvider>{children}</ThemeProvider></AuthProvider>
       </body>
     </html>
   );
