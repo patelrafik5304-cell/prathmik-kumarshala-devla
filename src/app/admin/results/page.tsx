@@ -18,6 +18,7 @@ interface Result {
   grade: string;
   subjects: Record<string, number>;
   published: boolean;
+  createdAt?: string;
 }
 
 const DEFAULT_SUBJECTS = ['Math', 'Science', 'English', 'Social', 'Hindi'];
@@ -116,6 +117,11 @@ export default function ResultsPage() {
     return cls; // Return simple number like "1", "2", etc.
   };
   const currentSubjects = filterClass === 'all' ? DEFAULT_SUBJECTS : getSubjectsForClass(filterClass);
+
+  const canDelete = (createdAt?: string) => {
+    if (!createdAt) return false;
+    return Date.now() - new Date(createdAt).getTime() <= 7 * 24 * 60 * 60 * 1000;
+  };
 
   const downloadCSV = () => {
     if (filterClass === 'all') {
@@ -335,14 +341,13 @@ export default function ResultsPage() {
       return;
     }
     setBulkActionLoading(true);
-    const toDelete = filtered;
-    setResults(prev => prev.filter(r => r.class !== filterClass));
+    const toDelete = filtered.filter(r => canDelete(r.createdAt));
+    setResults(prev => prev.filter(r => r.class !== filterClass || !canDelete(r.createdAt)));
     setShowBulkDeleteModal(false);
     try {
-      const promises = toDelete.map(r =>
+      await Promise.all(toDelete.map(r =>
         fetch(`/api/results?id=${r.id}`, { method: 'DELETE' })
-      );
-      await Promise.all(promises);
+      ));
     } catch (err) {
       const r = await fetch('/api/results');
       const d = await r.json();
@@ -532,7 +537,7 @@ export default function ResultsPage() {
                     <div className="flex flex-wrap gap-1">
                       <Button variant="ghost" className="px-2 py-1 text-xs" onClick={() => openEdit(result)}><Edit2 className="w-3 h-3" /></Button>
                       <Button variant="ghost" className={`px-2 py-1 text-xs ${result.published ? 'text-orange-600' : 'text-green-600'}`} onClick={() => handleTogglePublish(result.id, result.published)}>{result.published ? 'Unpublish' : 'Publish'}</Button>
-                      {isAdmin && (
+                      {isAdmin && canDelete(result.createdAt) && (
                         <Button variant="ghost" className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => openDeleteModal(result)}><Trash2 className="w-3 h-3" /></Button>
                       )}
                     </div>
@@ -634,7 +639,7 @@ export default function ResultsPage() {
           <p className="text-gray-600 mb-2">Are you sure you want to delete the result for</p>
           <p className="font-semibold text-gray-800 mb-2">{resultToDelete?.studentName}</p>
           <p className="text-sm text-gray-500 mb-2">{resultToDelete?.exam} Exam — {resultToDelete?.percentage} ({resultToDelete?.grade})</p>
-          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-xl mb-6">The result will be hidden from admin view but will remain visible to students.</p>
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={actionLoading} onClick={handleDelete}>Yes, Delete</Button>
@@ -652,8 +657,8 @@ export default function ResultsPage() {
           <p className="font-semibold text-gray-800 mb-2">
             Class {formatClass(filterClass)}
           </p>
-          <p className="text-sm text-red-600 mb-2">This will delete {filtered.length} result(s).</p>
-          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <p className="text-sm text-red-600 mb-2">Results older than 7 days will not be deleted. {filtered.filter(r => canDelete(r.createdAt)).length} result(s) are eligible.</p>
+          <p className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-xl mb-6">Deleted results will be hidden from admin view but remain visible to students.</p>
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setShowBulkDeleteModal(false)}>No</Button>
             <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={bulkActionLoading} onClick={handleBulkDelete}>Yes, Delete All</Button>

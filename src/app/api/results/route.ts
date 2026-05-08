@@ -26,7 +26,11 @@ export async function GET(req: NextRequest) {
     }
 
     const snapshot = await query.get();
-    const results = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+    let results = snapshot.docs.map((doc: any) => ({ ...doc.data(), id: doc.id }));
+
+    if (!studentUsername) {
+      results = results.filter((r: any) => !r.deletedAt);
+    }
 
     results.sort((a: any, b: any) => {
       const dateA = (a as any).createdAt || '';
@@ -35,7 +39,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json(results, {
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
     });
   } catch (e: any) {
     console.error('[Results GET] Error:', e);
@@ -166,7 +170,14 @@ export async function DELETE(req: NextRequest) {
     if (!doc.exists) {
       return NextResponse.json({ error: 'Result not found' }, { status: 404 });
     }
-    await db.collection('results').doc(id).delete();
+    const data = doc.data();
+    if (data?.createdAt) {
+      const age = Date.now() - new Date(data.createdAt).getTime();
+      if (age > 7 * 24 * 60 * 60 * 1000) {
+        return NextResponse.json({ error: 'Cannot delete results older than 7 days' }, { status: 403 });
+      }
+    }
+    await db.collection('results').doc(id).update({ deletedAt: new Date().toISOString() });
     return NextResponse.json({ success: true });
   } catch (e: any) {
     console.error('[Results DELETE] Error:', e);
