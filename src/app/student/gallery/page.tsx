@@ -8,11 +8,13 @@ import { Image as ImageIcon, X } from 'lucide-react';
 
 export default function StudentGallery() {
   const [galleryItems, setGalleryItems] = useState<{ _id: string; title: string; category: string; description: string; imageUrl: string; date: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedImage, setSelectedImage] = useState<{ title: string; description: string; category: string; date: string; imageUrl: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/gallery').then((r) => r.json()).then((data) => setGalleryItems(Array.isArray(data) ? data : []));
+    setLoading(true);
+    fetch(`/api/gallery?t=${Date.now()}`).then((r) => r.json()).then((data) => setGalleryItems(Array.isArray(data) ? data : [])).finally(() => setLoading(false));
   }, []);
 
   const categories = ['All', ...Array.from(new Set(galleryItems.map((g) => g.category)))];
@@ -35,8 +37,13 @@ export default function StudentGallery() {
         </Card>
       )}
 
-      {filtered.length === 0 ? (
-        <EmptyState icon={<ImageIcon className="w-8 h-8" />} title="No images in the gallery yet" />
+      {loading && galleryItems.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-500">Images loading...</p>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={<ImageIcon className="w-8 h-8" />} title="No images uploaded yet" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((item) => (
