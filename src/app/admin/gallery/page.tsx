@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Image as ImageIcon, X } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, X, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -22,14 +22,19 @@ export default function GalleryPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [images, setImages] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Events', description: '' });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState('all');
+  const [deleteTarget, setDeleteTarget] = useState<GalleryItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [doneMsg, setDoneMsg] = useState('');
 
   useEffect(() => {
-    fetch('/api/gallery').then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : []));
+    setLoading(true);
+    fetch('/api/gallery').then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])).finally(() => setLoading(false));
   }, []);
 
   const refetch = () => { fetch('/api/gallery').then((r) => r.json()).then((data) => setImages(Array.isArray(data) ? data : [])); };
@@ -47,13 +52,21 @@ export default function GalleryPage() {
     else { alert('Upload failed: ' + (data.error || 'Unknown error')); }
   };
 
-  const handleDelete = async (id: string) => {
-    setImages(prev => prev.filter((i) => i._id !== id));
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/gallery?id=${deleteTarget._id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setImages(prev => prev.filter((i) => i._id !== deleteTarget._id));
+        setDoneMsg('Image deleted successfully');
+        setTimeout(() => setDoneMsg(''), 4000);
+      }
     } catch (err) {
       refetch();
     }
+    setDeleting(false);
+    setDeleteTarget(null);
   };
 
   const categories = ['all', ...new Set(images.map((i) => i.category))];
@@ -81,8 +94,13 @@ export default function GalleryPage() {
         </Card>
       )}
 
-      {filtered.length === 0 ? (
-        <EmptyState icon={<ImageIcon className="w-8 h-8" />} title="No images yet" description="Upload your first school photo to get started" />
+      {loading && images.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-500">Images loading...</p>
+        </Card>
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={<ImageIcon className="w-8 h-8" />} title="No images uploaded yet" description="Upload your first school photo to get started" />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((img) => (
@@ -106,7 +124,7 @@ export default function GalleryPage() {
                 <p className="text-xs text-gray-400 mb-3">{img.date}</p>
                 <div className="flex gap-2">
                   {isAdmin && (
-                    <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => handleDelete(img._id)}><Trash2 className="w-3.5 h-3.5" /> Delete</Button>
+                    <Button variant="ghost" className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(img)}><Trash2 className="w-3.5 h-3.5" /> Delete</Button>
                   )}
                 </div>
               </div>
@@ -131,6 +149,28 @@ export default function GalleryPage() {
           </div>
           <div className="flex gap-3 pt-2"><Button type="submit" className="flex-1">Upload</Button><Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(false); setForm({ title: '', category: 'Events', description: '' }); setImageFile(null); }}>Cancel</Button></div>
         </form>
+      </Modal>
+
+      {doneMsg && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg animate-slide-up flex items-center gap-3 z-50">
+          <Check className="w-4 h-4" /> {doneMsg}
+          <button onClick={() => setDoneMsg('')} className="underline text-sm">Done</button>
+        </div>
+      )}
+
+      <Modal open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} title="Confirm Delete">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <p className="text-gray-600 mb-2">Are you sure you want to delete</p>
+          <p className="font-semibold text-gray-800 mb-6">{deleteTarget?.title}?</p>
+          <p className="text-sm text-gray-500 mb-6">This action cannot be undone.</p>
+          <div className="flex gap-3">
+            <Button variant="secondary" className="flex-1" disabled={deleting} onClick={() => setDeleteTarget(null)}>No</Button>
+            <Button variant="primary" className="flex-1 bg-red-600 hover:bg-red-700 text-white" loading={deleting} onClick={handleDelete}>Yes, Delete</Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Lightbox */}
