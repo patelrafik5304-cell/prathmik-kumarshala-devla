@@ -1,31 +1,62 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { getFcmToken, onForegroundMessage } from '@/lib/fcm';
 
 export default function NotificationPermission() {
-  const [status, setStatus] = useState<NotificationPermission | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   useEffect(() => {
     if (!('Notification' in window)) return;
-    const p = Notification.permission;
-    setStatus(p);
-    if (p === 'default') {
+    if (Notification.permission === 'granted') {
+      registerToken();
+    } else if (Notification.permission === 'default') {
       setShowPrompt(true);
     }
   }, []);
 
-  const handleRequest = useCallback(async () => {
+  useEffect(() => {
+    if (Notification.permission !== 'granted') return;
+    const unsub = onForegroundMessage((payload) => {
+      const { title, body } = payload.data || {};
+      if (title) {
+        new Notification(title, { body: body || '', icon: '/logo.jpeg' });
+      }
+    });
+    return unsub;
+  }, []);
+
+  const registerToken = useCallback(async () => {
+    try {
+      const token = await getFcmToken();
+      if (token) {
+        await fetch('/api/notifications/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        setRegistered(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleAllow = useCallback(async () => {
     if (!('Notification' in window)) return;
     const p = await Notification.requestPermission();
-    setStatus(p);
     setShowPrompt(false);
-  }, []);
+    if (p === 'granted') {
+      await registerToken();
+    }
+  }, [registerToken]);
 
   const handleDismiss = useCallback(() => {
     setShowPrompt(false);
   }, []);
 
+  if (registered) return null;
   if (!showPrompt) return null;
 
   return (
@@ -61,7 +92,7 @@ export default function NotificationPermission() {
           Not now
         </button>
         <button
-          onClick={handleRequest}
+          onClick={handleAllow}
           style={{
             background: '#fff',
             border: 'none',

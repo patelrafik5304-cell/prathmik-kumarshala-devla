@@ -1,7 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { getMessaging } from 'firebase-admin/messaging';
 
 const BATCH_LIMIT = 400;
+
+async function sendPushNotification(title: string, body: string) {
+  try {
+    const db = getAdminDb();
+    const snapshot = await db.collection('notificationTokens').get();
+    const tokens: string[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.token) tokens.push(data.token);
+    });
+
+    if (tokens.length === 0) return;
+
+    const messaging = getMessaging();
+    const result = await messaging.sendEachForMulticast({
+      tokens,
+      data: { title, body, icon: '/logo.jpeg' },
+    });
+
+    const failedTokens: string[] = [];
+    result.responses.forEach((resp, idx) => {
+      if (!resp.success) failedTokens.push(tokens[idx]);
+    });
+
+    if (failedTokens.length > 0) {
+      const batch = db.batch();
+      failedTokens.forEach((t) => {
+        batch.delete(db.collection('notificationTokens').doc(t));
+      });
+      await batch.commit();
+    }
+  } catch (e) {
+    console.error('[Push Notification] Error:', e);
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -110,6 +146,9 @@ export async function POST(req: NextRequest) {
       }
 
       console.log('[Results] Replace batch committed successfully');
+      const examName = records[0]?.exam || 'Results';
+      const className = records[0]?.class || '';
+      sendPushNotification('New Results Uploaded', `${examName} results for class ${className} are now available.`);
       return NextResponse.json({ success: true, count: records.length });
     }
 
@@ -121,6 +160,10 @@ export async function POST(req: NextRequest) {
       batch.set(ref, { ...rest, published: true, createdAt: new Date().toISOString() });
     });
     await batch.commit();
+    const firstItem = items[0];
+    const examName = firstItem?.exam || 'Results';
+    const className = firstItem?.class || '';
+    sendPushNotification('New Results Uploaded', `${examName} results for class ${className} are now available.`);
     return NextResponse.json({ success: true, count: items.length }, { status: 201 });
   } catch (e: any) {
     console.error('[Results POST] Error:', e);
@@ -150,6 +193,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'No valid data to update' }, { status: 400 });
     }
     await docRef.update(cleanData);
+    if (cleanData.published === true) {
+      const updated = doc.data();
+      const name = updated?.exam || 'Results';
+      const cls = updated?.class || '';
+      sendPushNotification('Results Published', `${name} results for class ${cls} are now available.`);
+    }
     console.log('[Results PUT] Success');
     return NextResponse.json({ success: true });
   } catch (e: any) {
