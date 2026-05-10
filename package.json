@@ -10,6 +10,7 @@
     "update-passwords": "node scripts/update-student-passwords.js"
   },
   "dependencies": {
+    "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "file-saver": "^2.0.5",

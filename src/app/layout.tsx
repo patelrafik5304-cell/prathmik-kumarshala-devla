@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ThemeProvider from "@/components/ThemeProvider";
 import NotificationPermission from "@/components/NotificationPermission";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
@@ -42,7 +43,7 @@ export default function RootLayout({
         <script src="/watermark.js" />
       </head>
       <body className={poppins.className}>
-        <AuthProvider><ThemeProvider>{children}<NotificationPermission /></ThemeProvider></AuthProvider>
+        <AuthProvider><ThemeProvider>{children}<NotificationPermission /><SpeedInsights /></ThemeProvider></AuthProvider>
       </body>
     </html>
   );
