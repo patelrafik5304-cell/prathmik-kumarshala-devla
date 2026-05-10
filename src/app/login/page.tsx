@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
@@ -60,11 +61,12 @@ export default function LoginPage() {
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl">
           {/* Logo & Title */}
           <div className="text-center mb-8">
-            <img
+            <Image
               src="/logo.jpeg"
               alt="Prathmik Kumarshala"
-              loading="lazy"
-              className="w-20 h-20 rounded-2xl shadow-lg mb-4 object-cover mx-auto logo-breathe"
+              width={80}
+              height={80}
+              className="rounded-2xl shadow-lg mb-4 mx-auto logo-breathe"
             />
             <h1 className="text-3xl font-bold tracking-tight title-gradient">
               PRATHMIK KUMARSHALA-DEVLA

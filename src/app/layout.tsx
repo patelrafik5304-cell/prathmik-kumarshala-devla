@@ -39,8 +39,8 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico?v=3" />
         <link rel="icon" href="/favicon.png?v=3" type="image/png" />
         <link rel="apple-touch-icon" href="/logo.jpeg?v=3" />
-        <script src="/screenshot-protection.js" />
-        <script src="/watermark.js" />
+        <script src="/screenshot-protection.js" defer />
+        <script src="/watermark.js" defer />
       </head>
       <body className={poppins.className}>
         <AuthProvider><ThemeProvider>{children}<NotificationPermission /><SpeedInsights /></ThemeProvider></AuthProvider>

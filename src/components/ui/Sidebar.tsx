@@ -1,10 +1,11 @@
 ﻿'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Users, UserCheck, CalendarDays, FileText,
-  Megaphone, Image, Globe, LogOut, X, Menu, Bell, UserCircle
+  Megaphone, Image as ImageIcon, Globe, LogOut, X, Menu, Bell, UserCircle
 } from 'lucide-react';
 
 const adminItems = [
@@ -14,7 +15,7 @@ const adminItems = [
   { href: '/admin/attendance', label: 'Attendance', icon: CalendarDays },
   { href: '/admin/results', label: 'Results', icon: FileText },
   { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
-  { href: '/admin/gallery', label: 'Gallery', icon: Image },
+  { href: '/admin/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/admin/website', label: 'Website', icon: Globe },
 ];
 
@@ -25,7 +26,7 @@ const studentItems = [
   { href: '/student/results', label: 'Results', icon: FileText },
   { href: '/student/staff', label: 'Staff', icon: Users },
   { href: '/student/notices', label: 'Notices', icon: Bell },
-  { href: '/student/gallery', label: 'Gallery', icon: Image },
+  { href: '/student/gallery', label: 'Gallery', icon: ImageIcon },
 ];
 
 interface SidebarProps {
@@ -75,7 +76,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <img src="/logo.jpeg" alt="Prathmik Kumarshala" className="w-10 h-10 rounded-xl object-cover" />
+              <Image src="/logo.jpeg" alt="Prathmik Kumarshala" width={40} height={40} className="rounded-xl object-cover" />
               <h2 className="font-semibold text-sm">{title}</h2>
             </div>
             <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors">
