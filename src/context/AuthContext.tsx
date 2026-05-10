@@ -7,12 +7,14 @@ interface AuthContextType {
   user: { username: string; name: string; role: string; class?: string } | null;
   login: (username: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ username: string; name: string; role: string; class?: string } | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch {}
     }
+    setLoading(false);
   }, []);
 
   const login = async (username: string, password: string, remember: boolean = true) => {
@@ -52,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

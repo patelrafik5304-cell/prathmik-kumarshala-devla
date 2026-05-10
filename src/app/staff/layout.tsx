@@ -15,11 +15,12 @@ const navItems = [
 ];
 
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (loading) return;
     if (!user) {
       router.push('/login');
       return;
@@ -27,9 +28,9 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
     if (user.role !== 'staff' && user.role !== 'admin') {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [user, router, loading]);
 
-  if (!user || (user.role !== 'staff' && user.role !== 'admin')) return null;
+  if (loading || !user || (user.role !== 'staff' && user.role !== 'admin')) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
