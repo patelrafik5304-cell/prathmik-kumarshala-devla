@@ -3,8 +3,12 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ThemeProvider from "@/components/ThemeProvider";
-import NotificationPermission from "@/components/NotificationPermission";
+import dynamic from "next/dynamic";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+const NotificationPermission = dynamic(
+  () => import("@/components/NotificationPermission")
+);
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 

@@ -18,13 +18,14 @@ export default function NotificationPermission() {
 
   useEffect(() => {
     if (Notification.permission !== 'granted') return;
-    const unsub = onForegroundMessage((payload) => {
+    let unsub: (() => void) | undefined;
+    onForegroundMessage((payload) => {
       const { title, body } = payload.data || {};
       if (title) {
         new Notification(title, { body: body || '', icon: '/logo.jpeg' });
       }
-    });
-    return unsub;
+    }).then((fn) => { unsub = fn; });
+    return () => { unsub?.(); };
   }, []);
 
   const registerToken = useCallback(async () => {

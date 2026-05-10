@@ -1,15 +1,10 @@
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import type { FirebaseApp } from 'firebase/app';
-import app from './firebase';
-
 const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
 
 async function registerSw() {
   if (typeof window === 'undefined') return null;
   if ('serviceWorker' in navigator) {
     try {
-      const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      return reg;
+      return await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     } catch {
       return null;
     }
@@ -17,31 +12,31 @@ async function registerSw() {
   return null;
 }
 
-function getMessagingSafe(app: FirebaseApp | null) {
-  if (!app) return null;
-  return getMessaging(app);
-}
-
 export async function getFcmToken(): Promise<string | null> {
   if (typeof window === 'undefined' || !('Notification' in window)) return null;
 
   try {
-    const messaging = getMessagingSafe(app);
-    if (!messaging) return null;
+    const { getApp } = await import('./firebase');
+    const app = await getApp();
+    if (!app) return null;
+    const { getMessaging, getToken } = await import('firebase/messaging');
     await registerSw();
-    const token = await getToken(messaging, { vapidKey });
-    return token;
+    const messaging = getMessaging(app);
+    return await getToken(messaging, { vapidKey });
   } catch {
     return null;
   }
 }
 
-export function onForegroundMessage(callback: (payload: any) => void) {
+export async function onForegroundMessage(callback: (payload: any) => void) {
   if (typeof window === 'undefined') return () => {};
 
   try {
-    const messaging = getMessagingSafe(app);
-    if (!messaging) return () => {};
+    const { getApp } = await import('./firebase');
+    const app = await getApp();
+    if (!app) return () => {};
+    const { getMessaging, onMessage } = await import('firebase/messaging');
+    const messaging = getMessaging(app);
     return onMessage(messaging, callback);
   } catch {
     return () => {};

@@ -1,9 +1,3 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
-import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getAnalytics, Analytics } from 'firebase/analytics';
-
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
@@ -14,23 +8,14 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '',
 };
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
-let analytics: Analytics | null = null;
+let appInstance: any = null;
 
-if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  if (firebaseConfig.measurementId) {
-    analytics = getAnalytics(app);
-  }
+export async function getApp() {
+  if (appInstance) return appInstance;
+  if (typeof window === 'undefined') return null;
+  const { initializeApp, getApps, getApp: getExistingApp } = await import('firebase/app');
+  appInstance = getApps().length ? getExistingApp() : initializeApp(firebaseConfig);
+  return appInstance;
 }
 
-const googleProvider = new GoogleAuthProvider();
-
-export { auth, db, storage, analytics, googleProvider };
-export default app;
+export default appInstance;

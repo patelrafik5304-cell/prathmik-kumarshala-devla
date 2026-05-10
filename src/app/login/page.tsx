@@ -66,7 +66,8 @@ export default function LoginPage() {
               alt="Prathmik Kumarshala"
               width={80}
               height={80}
-              className="rounded-2xl shadow-lg mb-4 mx-auto logo-breathe"
+              priority
+              className="rounded-2xl shadow-lg mb-4 mx-auto"
             />
             <h1 className="text-3xl font-bold tracking-tight title-gradient">
               PRATHMIK KUMARSHALA-DEVLA
