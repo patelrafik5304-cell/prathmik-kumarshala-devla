@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Eye, EyeOff, X, User, Upload, FileSpreadsheet, Trash2, Check, Download } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, X, User, Upload, FileSpreadsheet, Trash2, Check, Download, FileDown } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Card from '@/components/ui/Card';
@@ -305,6 +305,27 @@ export default function StudentsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const downloadPDF = async () => {
+    const jsPDF = (await import('jspdf')).default;
+    const autoTable = (await import('jspdf-autotable')).default;
+    const doc = new jsPDF();
+    const rows = filtered.map((s) => {
+      let pwd = s.password || '';
+      if (s.plainPassword && !s.plainPassword.startsWith('$2b$')) pwd = s.plainPassword;
+      else if (s.password && !s.password.startsWith('$2b$')) pwd = s.password;
+      else pwd = '••••••';
+      return [s.name, getClassDisplay(s.class), s.username, pwd];
+    });
+    autoTable(doc, {
+      head: [['NAME', 'CLASS', 'LOGIN ID', 'PASSWORD']],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
+    doc.save('student_credentials.pdf');
+  };
+
   return (
     <div>
       <div className="flex flex-col gap-4 mb-8">
@@ -315,6 +336,9 @@ export default function StudentsPage() {
         
         {/* Mobile action bar - visible on small screens */}
         <div className="grid grid-cols-2 sm:hidden gap-2">
+          <Button variant="secondary" onClick={downloadPDF} className="justify-center py-3">
+            <FileDown className="w-5 h-5" /> PDF
+          </Button>
           <Button variant="secondary" onClick={downloadCSV} className="justify-center py-3">
             <Download className="w-5 h-5" /> Template
           </Button>
@@ -327,7 +351,10 @@ export default function StudentsPage() {
         </div>
         
         {/* Desktop buttons - hidden on mobile */}
-        <div className="hidden sm:flex gap-2">
+        <div className="hidden sm:flex gap-2 flex-wrap">
+          <Button variant="secondary" onClick={downloadPDF} className="justify-center">
+            <FileDown className="w-4 h-4" /> Download PDF
+          </Button>
           <Button variant="secondary" onClick={downloadCSV} className="justify-center">
             <Download className="w-4 h-4" /> CSV Template
           </Button>
