@@ -55,6 +55,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
       {!isOpen && (
         <button
           onClick={onOpen}
+          aria-label="Open sidebar"
           className="fixed top-4 left-4 z-30 lg:hidden p-2.5 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
         >
           <Menu className="w-5 h-5 text-gray-600" />
@@ -79,7 +80,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
               <Image src="/logo.jpeg" alt="Prathmik Kumarshala" width={40} height={40} className="rounded-xl object-cover" />
               <h2 className="font-semibold text-sm">{title}</h2>
             </div>
-            <button onClick={onClose} className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors">
+            <button onClick={onClose} aria-label="Close sidebar" className="lg:hidden p-1 hover:bg-white/10 rounded-lg transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
