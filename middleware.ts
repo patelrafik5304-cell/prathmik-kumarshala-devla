@@ -8,11 +8,16 @@ export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public paths that don't require authentication
-  const publicPaths = ['/login', '/forgot-password', '/'];
+  const publicPaths = ['/login', '/forgot-password'];
   const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith('/_next'));
 
   if (isPublicPath) {
     return NextResponse.next();
+  }
+
+  // Redirect root to login
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // For protected routes, the AuthContext in layout files handles redirects
