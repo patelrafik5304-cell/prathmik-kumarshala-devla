@@ -56,11 +56,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Floating background decorations */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="absolute -bottom-32 -left-32 w-[30rem] h-[30rem] bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '10s' }} />
+      </div>
+
       <div className="w-full max-w-md animate-slide-up">
         <div className="glass-card rounded-2xl p-8 shadow-2xl">
           {/* Logo & Title */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 stagger-1">
             <Image
               src="/logo.jpeg"
               alt="Prathmik Kumarshala"
@@ -78,7 +85,7 @@ export default function LoginPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-scale-in">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-2 animate-shake">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -88,11 +95,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-5">
             {/* Username Field */}
-            <div>
+            <div className="stagger-2">
               <label className="block text-sm font-semibold text-gray-200 mb-2">Username</label>
-              <div className="relative">
+              <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-purple-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
                 </div>
@@ -100,7 +107,7 @@ export default function LoginPage() {
                   type="text"
                   value={username}
                   onChange={(e) => { setUsername(e.target.value); setFieldErrors((prev) => ({ ...prev, username: undefined })); }}
-                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:bg-white/15 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.3)] transition-all duration-300 ${fieldErrors.username ? 'border-red-400' : ''}`}
+                  className={`w-full pl-11 pr-4 py-3 border-2 rounded-xl outline-none bg-white/10 border-white/20 text-white placeholder-gray-400 transition-all duration-300 focus:border-purple-500 focus:bg-white/15 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.3)] active:bg-white/15 motion-press ${fieldErrors.username ? 'border-red-400 animate-shake' : ''}`}
                   placeholder="Enter your username"
                   required
                 />
@@ -111,11 +118,11 @@ export default function LoginPage() {
             </div>
 
             {/* Password Field */}
-            <div>
+            <div className="stagger-3">
               <label className="block text-sm font-semibold text-gray-200 mb-2">Password</label>
-              <div className="relative">
+              <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-400 group-focus-within:text-purple-400 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
@@ -123,7 +130,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: undefined })); }}
-                  className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none bg-white/10 border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:bg-white/15 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.3)] transition-all duration-300 ${fieldErrors.password ? 'border-red-400' : ''}`}
+                  className={`w-full pl-11 pr-12 py-3 border-2 rounded-xl outline-none bg-white/10 border-white/20 text-white placeholder-gray-400 transition-all duration-300 focus:border-purple-500 focus:bg-white/15 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.3)] active:bg-white/15 motion-press ${fieldErrors.password ? 'border-red-400 animate-shake' : ''}`}
                   placeholder="Enter your password"
                   required
                 />
@@ -131,7 +138,7 @@ export default function LoginPage() {
                   type="button"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-200 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-200 transition-all duration-300 active:scale-90"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -151,7 +158,7 @@ export default function LoginPage() {
             </div>
 
             {/* Remember Me */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between stagger-4">
               <label className="flex items-center gap-2 cursor-pointer group">
                 <div className="relative">
                   <input
@@ -160,7 +167,7 @@ export default function LoginPage() {
                     onChange={(e) => setRemember(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center border-gray-400 bg-gray-700 peer-checked:border-purple-500 peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-500">
+                  <div className="w-5 h-5 border-2 rounded transition-all duration-200 flex items-center justify-center border-gray-400 bg-gray-700 peer-checked:border-purple-500 peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-500 group-active:scale-90">
                     {remember && (
                       <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -173,32 +180,34 @@ export default function LoginPage() {
             </div>
 
             {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="premium-button w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold text-base hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </>
-              )}
-            </button>
+            <div className="stagger-5">
+              <button
+                type="submit"
+                disabled={loading}
+                className="premium-button w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3.5 rounded-xl font-semibold text-base hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 active:duration-75"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <svg className="w-4 h-4 transition-transform duration-300 active:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-700/50 text-center">
+          <div className="mt-8 pt-6 border-t border-gray-700/50 text-center stagger-6">
             <p className="text-xs text-gray-400">Prathmik Kumarshala Devla © 2026</p>
           </div>
         </div>
