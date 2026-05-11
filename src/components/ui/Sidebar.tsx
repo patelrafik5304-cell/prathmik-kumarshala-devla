@@ -56,7 +56,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
         <button
           onClick={onOpen}
           aria-label="Open sidebar"
-          className="fixed top-4 left-4 z-30 lg:hidden p-2.5 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+          className="motion-menu-button fixed top-4 left-4 z-30 lg:hidden p-2.5 bg-white rounded-xl shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
         >
           <Menu className="w-5 h-5 text-gray-600" />
         </button>
@@ -64,13 +64,13 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
 
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed top-0 left-0 h-full w-[280px] bg-primary text-white z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-[min(280px,calc(100vw-48px))] bg-primary text-white z-50 transition-transform duration-300 ease-in-out lg:w-[280px] lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -97,7 +97,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
                         router.push(item.href);
                         onClose();
                       }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`motion-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-white/15 text-white shadow-lg'
                           : 'text-blue-100 hover:bg-white/10 hover:text-white'

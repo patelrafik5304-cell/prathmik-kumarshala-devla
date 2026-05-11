@@ -28,16 +28,16 @@ export default function StatCard({ icon, label, value, accentColor }: StatCardPr
 
   return (
     <div
-      className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
+      className={`motion-card bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
       }`}
     >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="text-3xl font-bold text-gray-800 mt-2">{value}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-800 mt-2">{value}</p>
         </div>
-        <div className={`w-12 h-12 ${colors.iconBg} rounded-xl flex items-center justify-center ${colors.text}`}>
+        <div className={`w-11 h-11 sm:w-12 sm:h-12 ${colors.iconBg} rounded-xl flex items-center justify-center ${colors.text}`}>
           {icon}
         </div>
       </div>

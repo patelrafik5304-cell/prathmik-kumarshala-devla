@@ -44,7 +44,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 lg:transform-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-[min(16rem,calc(100vw-48px))] lg:w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 lg:transform-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <Link href="/staff" className="text-xl font-bold text-gray-800">
@@ -91,7 +91,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         {/* Top Bar */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
           <button
@@ -105,7 +105,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 min-w-0 p-3 sm:p-4 lg:p-8">{children}</main>
       </div>
     </div>
   );

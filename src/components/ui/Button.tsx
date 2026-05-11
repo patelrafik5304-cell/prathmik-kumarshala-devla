@@ -19,7 +19,7 @@ export default function Button({ variant = 'primary', loading, disabled, childre
   return (
     <button
       disabled={loading || disabled}
-      className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+      className={`motion-press inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
         variantClasses[variant]
       } ${className}`}
       {...props}

@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-[#f8fafc] flex">
       <Sidebar role="admin" isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onOpen={() => setSidebarOpen(true)} />
-      <main className="flex-1 lg:ml-[280px] p-4 lg:p-8 h-screen overflow-y-auto">
+      <main className="flex-1 min-w-0 lg:ml-[280px] p-3 pt-16 sm:p-4 lg:p-8 h-screen overflow-y-auto">
         <div className="animate-slide-up">
           {children}
         </div>
