@@ -24,15 +24,33 @@ export default function AnnouncementsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', priority: 'medium', type: 'general', startDate: '', endDate: '' });
   const [editingItem, setEditingItem] = useState<Announcement | null>(null);
 
   useEffect(() => {
-    fetch('/api/announcements').then((r) => r.json()).then((data) => setAnnouncements(data));
+    refetch();
   }, []);
 
-  const refetch = () => { fetch('/api/announcements').then((r) => r.json()).then((data) => setAnnouncements(data)); };
+  const refetch = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/announcements?includeInactive=true');
+      const data = await res.json();
+      setAnnouncements(Array.isArray(data) ? data : []);
+      if (!res.ok) {
+        setError('Unable to load announcements right now.');
+      }
+    } catch {
+      setAnnouncements([]);
+      setError('Unable to load announcements right now.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +100,19 @@ export default function AnnouncementsPage() {
         <Button variant="primary" onClick={() => setShowModal(true)}><Plus className="w-4 h-4" /> New Announcement</Button>
       </div>
 
+      {error && (
+        <Card className="p-4 mb-6 border-red-200 bg-red-50">
+          <p className="text-sm text-red-700">{error}</p>
+        </Card>
+      )}
+
       <div className="space-y-4">
-        {announcements.map((a) => (
+        {loading ? (
+          <Card className="p-12 text-center">
+            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-gray-500">Loading announcements...</p>
+          </Card>
+        ) : announcements.map((a) => (
           <Card key={a.id} className="p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
               <div className="flex-1">
@@ -108,7 +137,7 @@ export default function AnnouncementsPage() {
             </div>
           </Card>
         ))}
-        {announcements.length === 0 && (
+        {!loading && announcements.length === 0 && (
           <Card className="p-12 text-center">
             <Megaphone className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">No announcements yet</p>

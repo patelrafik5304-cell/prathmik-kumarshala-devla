@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const includeInactive = searchParams.get('includeInactive') === 'true';
     const db = getAdminDb();
     const snapshot = await db.collection('announcements').get();
     const items = snapshot.docs.map(doc => {
@@ -19,7 +21,7 @@ export async function GET() {
         type: data.type,
         createdAt: data.createdAt,
       };
-    }).filter(item => item.isActive !== false); // Only return active announcements
+    }).filter(item => includeInactive || item.isActive !== false);
     items.sort((a: any, b: any) => {
       const dateA = a.createdAt || a.date || '';
       const dateB = b.createdAt || b.date || '';

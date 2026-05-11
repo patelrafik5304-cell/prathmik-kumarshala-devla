@@ -1,6 +1,7 @@
 ﻿'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -38,7 +39,6 @@ interface SidebarProps {
 
 export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, logout } = useAuth();
 
   const items = role === 'admin' ? adminItems : studentItems;
@@ -92,11 +92,9 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
-                    <button
-                      onClick={() => {
-                        router.push(item.href);
-                        onClose();
-                      }}
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
                       className={`motion-sidebar-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                         isActive
                           ? 'bg-white/15 text-white shadow-lg'
@@ -105,7 +103,7 @@ export default function Sidebar({ role, isOpen, onClose, onOpen }: SidebarProps)
                     >
                       <Icon className="w-5 h-5 flex-shrink-0" />
                       <span>{item.label}</span>
-                    </button>
+                    </Link>
                   </li>
                 );
               })}
