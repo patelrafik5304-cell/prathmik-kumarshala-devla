@@ -84,7 +84,8 @@ export default function AnnouncementsPage() {
   const handleDelete = async (id: string) => {
     setAnnouncements(prev => prev.filter(a => a.id !== id));
     try {
-      await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/announcements?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) refetch();
     } catch (err) {
       refetch();
     }
